@@ -14,7 +14,6 @@ namespace DataViewer.Utils
         }
 
         private Tree _tree;
-        private bool _dirty;
 
         private float _height;
         private bool _mouseOver;
@@ -52,8 +51,6 @@ namespace DataViewer.Utils
                 _tree = new Tree(target);
 
             _tree.Root.CustomFlags |= (int)CustomFlags.expanded;
-
-            _dirty = true;
         }
 
         public void OnGUI(bool drawRoot = true, bool collapse = false, bool update = false)
@@ -65,21 +62,6 @@ namespace DataViewer.Utils
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
 
             int startIndexUBound = Math.Max(0, _nodesCount - MaxRows);
-
-            // set update flag
-            if (Event.current.type == EventType.Used)
-            {
-                if (_dirty)
-                {
-                    update = true;
-                    _dirty = false;
-                }
-            }
-            else
-            {
-                collapse = false;
-                update = false;
-            }
 
             // mouse wheel & fix scroll position
             if (Event.current.type == EventType.Layout)
@@ -129,7 +111,7 @@ namespace DataViewer.Utils
 
                     GUILayout.Space(10f);
 
-                    GUILayout.Label($"Title Width:", GUILayout.ExpandWidth(false));
+                    GUILayout.Label("Title Width:", GUILayout.ExpandWidth(false));
                     TitleMinWidth = GUILayout.HorizontalSlider(TitleMinWidth, 0f, Screen.width / 2, GUILayout.Width(100f));
 
                     GUILayout.Space(10f);
@@ -174,7 +156,7 @@ namespace DataViewer.Utils
         {
             if (update)
                 node.UpdateValue();
-            
+
             bool expanded = (node.CustomFlags & (int)CustomFlags.expanded) != 0;
 
             if (depth >= _skipLevels && !(collapse && depth > 0))
@@ -221,6 +203,9 @@ namespace DataViewer.Utils
 
         private void DrawChildren(BaseNode node, int depth, bool collapse, bool update)
         {
+            if (node.IsBaseType)
+                return;
+
             foreach (BaseNode child in node.GetEnumNodes())
             {
                 DrawNode(child, depth, collapse, update);

@@ -32,11 +32,25 @@ namespace ModMaker.Utils
                 value++;
         }
 
-        public static void InputField(ref string value, string text, float titleMinWidth, bool expandTextField, Action onClear, Action onChanged)
+        public static void TextField(ref string value, GUIStyle style = null, params GUILayoutOption[] options)
         {
-            GUILayout.Label(text, GUILayout.MinWidth(titleMinWidth), GUILayout.ExpandWidth(false));
+            value = GUILayout.TextField(value, style ?? GUI.skin.textField, options);
+        }
+
+        public static void TextField(ref string value, Action onChanged, GUIStyle style = null, params GUILayoutOption[] options)
+        {
             string old = value;
-            value = GUILayout.TextField(value, GUILayout.ExpandWidth(expandTextField));
+            TextField(ref value, style, options);
+            if (value != old)
+            {
+                onChanged();
+            }
+        }
+
+        public static void TextField(ref string value, Action onClear, Action onChanged, GUIStyle style = null, params GUILayoutOption[] options)
+        {
+            string old = value;
+            TextField(ref value, style, options);
             if (value != old)
             {
                 if (string.IsNullOrEmpty(value))

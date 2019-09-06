@@ -2,7 +2,7 @@
   "Id": "DataViewer",
   "DisplayName": "Data Viewer",
   "Author": "Hsinyu",
-  "Version": "0.9.1",
+  "Version": "0.9.2",
   "ManagerVersion": "0.14.1",
   "EntryMethod": "DataViewer.Main.Load",
   "HomePage": "https://www.nexusmods.com/pathfinderkingmaker/mods/106",
