@@ -1,9 +1,11 @@
 ﻿using DataViewer.Utils;
+using DataViewer.Utils.ReflectionTree;
 using Kingmaker.Blueprints;
 using ModMaker.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
@@ -12,21 +14,35 @@ namespace DataViewer.Menus
 {
     public class BlueprintViewer : ModBase.Menu.ToggleablePage
     {
-        private string[] _targetNames;
+        // blueprint info
+        private Type[] _bpTypes;
+        private string[] _bpTypeNames;
 
         // tree view
         private ReflectionTreeView _treeView = new ReflectionTreeView();
-        private int _targetIndex;
-        private List<BlueprintScriptableObject> _target;
+        private int _bpTypeIndex;
+        private List<BlueprintScriptableObject> _blueprints;
 
-        // selection
-        private bool _expanded = true;
-        private float _height = 200f;
-        private Vector2 _scrollPosition;
+        // blueprint selection
+        private bool _bpsExpanded = true;
+        private float _bpsWidth;
+        private float _bpsHeight = 200f;
+        private Vector2 _bpsScrollPosition;
 
-        // search bar
-        private string _searchName;
-        private string _searchGuid;
+        // search
+        private Dictionary<string, FieldInfo> _bpFields;
+        private Dictionary<string, PropertyInfo> _bpProperties;
+        private string[] _bpChildNames;
+
+        private int _searchIndex;
+        private bool _searchReversed;
+        private string _searchText;
+
+        // search selection
+        private bool _searchExpanded;
+        private float _searchWidth;
+        private float _searchHeight = 200f;
+        private Vector2 _searchScrollPosition;
 
         private GUIStyle _buttonStyle;
 
@@ -47,93 +63,175 @@ namespace DataViewer.Menus
 
             try
             {
-                if (_targetNames == null && _library != null)
+                // blueprint type 
                 {
-                    _targetNames = new string[] { "None" }.Concat(_library.GetAllBlueprints()
-                        .Select(item => item.GetType()).Distinct().Select(type => type.FullName).OrderBy(name => name)).ToArray();
-                }
-
-                // combobox - button
-                using (new GUILayout.HorizontalScope())
-                {
-                    GUIHelper.ToggleButton(ref _expanded, $"Current: {_targetNames[_targetIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
-
-                    GUILayout.Space(10f);
-
-                    GUILayout.Label($"Height:");
-                    _height = GUILayout.HorizontalSlider(_height, 0f, Screen.height / 2, GUILayout.Width(100f));
-
-                    GUILayout.FlexibleSpace();
-                }
-
-                // combobox - list
-                if (_expanded)
-                {
-                    using (new GUILayout.HorizontalScope(GUI.skin.box, GUILayout.Width(650f), GUILayout.Height(_height)))
+                    // refresh blueprint types
+                    if (_bpTypeNames == null)
                     {
-                        GUILayout.Space(30f);
-
-                        using (var scrollView = new GUILayout.ScrollViewScope(_scrollPosition))
+                        if (_library != null)
                         {
-                            _scrollPosition = scrollView.scrollPosition;
+                            _bpTypes = new Type[] { null }.Concat(_library.GetAllBlueprints()
+                                .Select(bp => bp.GetType()).Distinct().OrderBy(type => type.FullName)).ToArray();
+                            _bpTypeNames = _bpTypes.Select(type => type?.FullName).ToArray();
+                            _bpTypeNames[0] = "None";
 
-                            GUIHelper.SelectionGrid(ref _targetIndex, _targetNames, 1, () =>
+                            _bpTypeIndex = 0;
+                            _blueprints = null;
+                            _treeView.Clear();
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+
+                    // slelection - button
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        GUIHelper.ToggleButton(ref _bpsExpanded, $"Current: {_bpTypeNames[_bpTypeIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
+
+                        if (_bpsExpanded)
+                        {
+                            GUILayout.Space(10f);
+
+                            GUILayout.Label("Height:", GUILayout.ExpandWidth(false));
+                            _bpsHeight = GUILayout.HorizontalSlider(_bpsHeight, 0f, Screen.height / 2, GUILayout.Width(100f), GUILayout.ExpandWidth(false));
+                        }
+                    }
+
+                    // slelection - list
+                    if (_bpsExpanded)
+                    {
+                        using (new GUILayout.HorizontalScope(GUI.skin.box, GUILayout.Width(_bpsWidth), GUILayout.Height(_bpsHeight)))
+                        {
+                            GUILayout.Space(30f);
+
+                            using (var scrollView = new GUILayout.ScrollViewScope(_bpsScrollPosition))
                             {
-                                if (_targetIndex == 0)
+                                _bpsScrollPosition = scrollView.scrollPosition;
+
+                                GUIHelper.SelectionGrid(ref _bpTypeIndex, _bpTypeNames, 1, () =>
                                 {
-                                    _target = null;
-                                    _treeView.Clear();
-                                }
-                                else
+                                    _searchText = null;
+                                    if (_bpTypeIndex == 0)
+                                    {
+                                        _bpFields = null;
+                                        _bpProperties = null;
+                                        _bpChildNames = null;
+                                        _searchIndex = 0;
+
+                                        _blueprints = null;
+                                        _treeView.Clear();
+                                    }
+                                    else
+                                    {
+                                        _bpFields = BaseNode.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpProperties = BaseNode.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).ToArray();
+                                        _searchIndex = Array.IndexOf(_bpChildNames, "name");
+
+                                        _blueprints = _library.GetAllBlueprints().Where(item => item.GetType() == _bpTypes[_bpTypeIndex]).ToList();
+                                        _treeView.SetTarget(_blueprints);
+                                    }
+                                }, _buttonStyle, GUILayout.ExpandWidth(false));
+
+                                // cache width
+                                if (Event.current.type == EventType.Repaint)
                                 {
-                                    _target = _library.GetAllBlueprints()
-                                        .Where(item => item.GetType().FullName == _targetNames[_targetIndex]).ToList();
-                                    _treeView.SetTarget(_target);
+                                    _bpsWidth = GUILayoutUtility.GetLastRect().width + 65f;
                                 }
-                                _searchName = null;
-                                _searchGuid = null;
-                            }, _buttonStyle);
+                            }
                         }
                     }
                 }
-                
-                if (_targetIndex != 0)
+
+                if (_bpTypeIndex != 0)
                 {
-                    GUILayout.Space(10f);
-
                     // search bar
-                    using (new GUILayout.HorizontalScope())
+                    if (_bpChildNames.Length > 0)
                     {
-                        GUIHelper.InputField(ref _searchName, "Search Name:", 90f, true, () => {
-                            _treeView.SetTarget(_target);
-                            _searchGuid = null;
-                        }, () =>
-                        {
-                            _treeView.SetTarget(_target.Where(item => item.name.Contains(_searchName)).ToList());
-                            _searchGuid = null;
-                        });
-                    }
+                        GUILayout.Space(10f);
 
-                    using (new GUILayout.HorizontalScope())
-                    {
-                        GUIHelper.InputField(ref _searchGuid, "Search GUID:", 90f, true, () => {
-                            _treeView.SetTarget(_target);
-                            _searchName = null;
-                        }, () => {
-                            _treeView.SetTarget(_target.Where(item => item.AssetGuid.Contains(_searchGuid)).ToList());
-                            _searchName = null;
-                        });
+                        bool isDirty = false;
+
+                        // slelection - button
+                        using (new GUILayout.HorizontalScope())
+                        {
+                            GUIHelper.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
+
+                            GUILayout.Space(10f);
+
+                            GUIHelper.ToggleButton(ref _searchReversed, "By Excluding", () => isDirty = true, () => isDirty = true, _buttonStyle, GUILayout.ExpandWidth(false));
+
+                            if (_searchExpanded)
+                            {
+                                GUILayout.Space(10f);
+
+                                GUILayout.Label("Height:", GUILayout.ExpandWidth(false));
+                                _searchHeight = GUILayout.HorizontalSlider(_searchHeight, 0f, Screen.height / 2, GUILayout.Width(100f), GUILayout.ExpandWidth(false));
+                            }
+                        }
+
+                        // slelection - list
+                        if (_searchExpanded)
+                        {
+                            using (new GUILayout.HorizontalScope(GUI.skin.box, GUILayout.Width(_searchWidth), GUILayout.Height(_searchHeight)))
+                            {
+                                GUILayout.Space(30f);
+
+                                using (var scrollView = new GUILayout.ScrollViewScope(_searchScrollPosition))
+                                {
+                                    _searchScrollPosition = scrollView.scrollPosition;
+
+                                    // selection
+                                    GUIHelper.SelectionGrid(ref _searchIndex, _bpChildNames, 1, () => isDirty = true, _buttonStyle, GUILayout.ExpandWidth(false));
+
+                                    // cache width
+                                    if (Event.current.type == EventType.Repaint)
+                                    {
+                                        _searchWidth = GUILayoutUtility.GetLastRect().width + 65f;
+                                    }
+                                }
+                            }
+                        }
+
+                        // input
+                        GUIHelper.TextField(ref _searchText, () => isDirty = true);
+
+                        // do search
+                        if (isDirty)
+                        {
+                            if (string.IsNullOrEmpty(_searchText))
+                            {
+                                _treeView.SetTarget(_blueprints);
+                            }
+                            else
+                            {
+                                if (_bpFields.TryGetValue(_bpChildNames[_searchIndex], out FieldInfo f))
+                                    _treeView.SetTarget(_blueprints.Where(bp =>
+                                    {
+                                        try { return (f.GetValue(bp)?.ToString().Contains(_searchText) ?? false) != _searchReversed; }
+                                        catch { return _searchReversed; }
+                                    }).ToList());
+                                else if (_bpProperties.TryGetValue(_bpChildNames[_searchIndex], out PropertyInfo p))
+                                    _treeView.SetTarget(_blueprints.Where(bp =>
+                                    {
+                                        try { return (p.GetValue(bp)?.ToString().Contains(_searchText) ?? false) != _searchReversed; }
+                                        catch { return _searchReversed; }
+                                    }).ToList());
+                            }
+                        }
                     }
 
                     GUILayout.Space(10f);
 
                     // tree view
-                    _treeView.OnGUI();
+                    _treeView.OnGUI(true, false, false);
                 }
             }
             catch (Exception e)
             {
-                _targetIndex = 0;
+                _bpTypeIndex = 0;
                 _treeView.Clear();
                 modEntry.Logger.Error(e.StackTrace);
                 throw e;
