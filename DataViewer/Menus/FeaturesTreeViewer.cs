@@ -65,7 +65,8 @@ namespace DataViewer.Menus
                                 }
                             }, null, GUILayout.ExpandWidth(false));
 
-                        if (selectedCharacterIndex == 0 && Event.current.type == EventType.Layout)
+                        if (selectedCharacterIndex == 0 && 
+                            (Event.current.type == EventType.Used || Event.current.type == EventType.Layout))
                         {
                             _selectedCharacter = null;
                             _featuresTree = null;
