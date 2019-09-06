@@ -126,8 +126,8 @@ namespace DataViewer.Menus
                                     }
                                     else
                                     {
-                                        _bpFields = BaseNode.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
-                                        _bpProperties = BaseNode.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpFields = Node.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpProperties = Node.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
                                         _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).ToArray();
                                         _searchIndex = Array.IndexOf(_bpChildNames, "name");
 

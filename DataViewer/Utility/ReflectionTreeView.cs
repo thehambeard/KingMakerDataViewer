@@ -27,7 +27,7 @@ namespace DataViewer.Utility
 
         public int MaxRows { get; set; } = 20;
 
-        public object Target => _tree.Root.Value;
+        public object Target => _tree.Root;
 
         public float TitleMinWidth { get; set; } = 300f;
 
@@ -46,11 +46,11 @@ namespace DataViewer.Utility
         public void SetTarget(object target)
         {
             if (_tree != null)
-                _tree.SetTarget(target);
+                _tree.SetRoot(target);
             else
                 _tree = new Tree(target);
 
-            _tree.Root.CustomFlags |= (int)CustomFlags.expanded;
+            _tree.RootNode.CustomFlags |= (int)CustomFlags.expanded;
         }
 
         public void OnGUI(bool drawRoot = true, bool collapse = false, bool update = false)
@@ -131,9 +131,9 @@ namespace DataViewer.Utility
                         {
                             _nodesCount = 0;
                             if (drawRoot)
-                                DrawNode(_tree.Root, 0, collapse, update);
+                                DrawNode(_tree.RootNode, 0, collapse, update);
                             else
-                                DrawChildren(_tree.Root, 0, collapse, update);
+                                DrawChildren(_tree.RootNode, 0, collapse, update);
                         }
 
                         // scrollbar
@@ -152,7 +152,7 @@ namespace DataViewer.Utility
             }
         }
 
-        private void DrawNode(BaseNode node, int depth, bool collapse, bool update)
+        private void DrawNode(Node node, int depth, bool collapse, bool update)
         {
             if (update)
                 node.UpdateValue();
@@ -204,9 +204,9 @@ namespace DataViewer.Utility
             {
                 switch (nodeType)
                 {
-                    case NodeType.ChildComponent:
+                    case NodeType.Component:
                         return "[c] ";
-                    case NodeType.EnumItem:
+                    case NodeType.Item:
                         return "[i] ";
                     case NodeType.Field:
                         return "[f] ";
@@ -218,27 +218,27 @@ namespace DataViewer.Utility
             }
         }
 
-        private void DrawChildren(BaseNode node, int depth, bool collapse, bool update)
+        private void DrawChildren(Node node, int depth, bool collapse, bool update)
         {
             if (node.IsBaseType)
                 return;
 
-            foreach (BaseNode child in node.GetEnumNodes())
+            foreach (Node child in node.GetEnumNodes())
             {
                 DrawNode(child, depth, collapse, update);
             }
 
-            foreach (BaseNode child in node.GetComponentNodes())
+            foreach (Node child in node.GetComponentNodes())
             {
                 DrawNode(child, depth, collapse, update);
             }
 
-            foreach (BaseNode child in node.GetFieldNodes())
+            foreach (Node child in node.GetFieldNodes())
             {
                 DrawNode(child, depth, collapse, update);
             }
 
-            foreach (BaseNode child in node.GetPropertyNodes())
+            foreach (Node child in node.GetPropertyNodes())
             {
                 DrawNode(child, depth, collapse, update);
             }
