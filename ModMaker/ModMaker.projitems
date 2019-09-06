@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>7d3f9428-c134-47fe-9d04-305b4d330401</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ModMaker</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\CodeInstructions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\RichText.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Dictionary\DoubleDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\GUIHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Reflection\ReflectionCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Reflection\ReflectionFieldCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Reflection\ReflectionMethodCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Reflection\ReflectionPropertyCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Dictionary\SerializableDictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\Dictionary\TripleDictionary.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Utils\Dictionary\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Utils\Reflection\" />
+  </ItemGroup>
+</Project>
