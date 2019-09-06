@@ -120,7 +120,7 @@ namespace DataViewer.Utility.ReflectionTree
             foreach (FieldInfo field in (Nullable.GetUnderlyingType(type) ?? type).GetFields(ALL_FLAGS))
             {
                 if (!field.IsStatic &&
-                    !field.GetCustomAttributes(typeof(CompilerGeneratedAttribute), true).Any() &&
+                    !field.IsDefined(typeof(CompilerGeneratedAttribute), false) &&  // ignore backing field
                     names.Add(field.Name))
                 {
                     yield return field;
