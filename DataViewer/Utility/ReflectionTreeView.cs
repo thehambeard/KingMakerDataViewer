@@ -1,10 +1,10 @@
-﻿using DataViewer.Utils.ReflectionTree;
-using ModMaker.Utils;
+﻿using DataViewer.Utility.ReflectionTree;
+using ModMaker.Utility;
 using System;
 using UnityEngine;
-using static ModMaker.Extensions.RichText;
+using static ModMaker.Utility.RichTextExtensions;
 
-namespace DataViewer.Utils
+namespace DataViewer.Utility
 {
     public class ReflectionTreeView
     {
@@ -156,6 +156,7 @@ namespace DataViewer.Utils
         {
             if (update)
                 node.UpdateValue();
+                
 
             bool expanded = (node.CustomFlags & (int)CustomFlags.expanded) != 0;
 
@@ -186,7 +187,7 @@ namespace DataViewer.Utils
                         GUI.contentColor = originalColor;
 
                         // instance type
-                        if (!node.IsNull && (node.Type != node.InstType || node.IsNullable))
+                        if (node.InstType != null && (node.Type != node.InstType || node.IsNullable))
                             GUILayout.Label((Nullable.GetUnderlyingType(node.InstType) ?? node.InstType).Name
                                 .Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
                     }

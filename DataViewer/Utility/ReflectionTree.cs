@@ -5,9 +5,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using static ModMaker.Utils.ReflectionCache;
+using static ModMaker.Utility.ReflectionCache;
 
-namespace DataViewer.Utils.ReflectionTree
+namespace DataViewer.Utility.ReflectionTree
 {
     public class Tree : Tree<object>
     {
@@ -196,6 +196,7 @@ namespace DataViewer.Utils.ReflectionTree
                         {
                             Type oldInstType = InstType;
                             InstType = value.GetType();
+
                             if (InstType != oldInstType)
                             {
                                 // type changed
@@ -205,6 +206,9 @@ namespace DataViewer.Utils.ReflectionTree
                             }
                         }
                     }
+
+                    //if (InstType == null)
+                    //    InstType = Type;
                 }
                 // component / enum elements 'may' changed
                 _componentIsDirty = true;
@@ -215,7 +219,7 @@ namespace DataViewer.Utils.ReflectionTree
 
         public override string ValueText => IsException ? "<exception>" : IsNull ? "<null>" : Value.ToString();
 
-        public override bool IsNull =>  Value == null;
+        public override bool IsNull => Value == null || ((Value is UnityEngine.Object UnityObj) && UnityObj == null);
 
         protected GenericNode() : base(typeof(TNode)) { }
 
@@ -241,6 +245,11 @@ namespace DataViewer.Utils.ReflectionTree
         {
             UpdatePropertyNodes();
             return _propertyNodes.AsReadOnly();
+        }
+
+        public override void UpdateValue()
+        {
+            Value = Value;
         }
 
         internal override void SetTarget(object target)
@@ -319,9 +328,10 @@ namespace DataViewer.Utils.ReflectionTree
 
             Type nodeType = typeof(ChildComponentNode<Component>);
             int i = 0;
+            int count = _componentNodes.Count;
             foreach (Component item in (Value as GameObject).GetComponents<Component>())
             {
-                if (i < _componentNodes.Count)
+                if (i < count)
                 {
                     _componentNodes[i].SetTarget(item);
                 }
@@ -332,8 +342,8 @@ namespace DataViewer.Utils.ReflectionTree
                 }
                 i++;
             }
-            if (i < _componentNodes.Count)
-                _componentNodes.RemoveRange(i, _componentNodes.Count - i);
+            if (i < count)
+                _componentNodes.RemoveRange(i, count - i);
         }
 
         private void UpdateEnumNodes()
@@ -364,9 +374,10 @@ namespace DataViewer.Utils.ReflectionTree
 
             Type nodeType = typeof(ItemOfEnumNode<>).MakeGenericType(itemType);
             int i = 0;
+            int count = _enumNodes.Count;
             foreach (object item in Value as IEnumerable)
             {
-                if (i < _enumNodes.Count)
+                if (i < count)
                 {
                     if (_enumNodes[i].Type == itemType)
                         _enumNodes[i].SetTarget(item);
@@ -381,8 +392,9 @@ namespace DataViewer.Utils.ReflectionTree
                 }
                 i++;
             }
-            if (i < _enumNodes.Count)
-                _enumNodes.RemoveRange(i, _enumNodes.Count - i);
+
+            if (i < count)
+                _enumNodes.RemoveRange(i, count - i);
         }
 
         private void UpdateFieldNodes()

@@ -1,7 +1,8 @@
-﻿using DataViewer.Utils;
-using DataViewer.Utils.ReflectionTree;
+﻿using DataViewer.Utility;
+using DataViewer.Utility.ReflectionTree;
 using Kingmaker.Blueprints;
-using ModMaker.Utils;
+using ModMaker;
+using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ using static DataViewer.Main;
 
 namespace DataViewer.Menus
 {
-    public class BlueprintViewer : ModBase.Menu.ToggleablePage
+    public class BlueprintViewer : IMenuSelectablePage
     {
         // blueprint info
         private Type[] _bpTypes;
@@ -49,13 +50,13 @@ namespace DataViewer.Menus
         private LibraryScriptableObject _library 
             => typeof(ResourcesLibrary).GetFieldValue<LibraryScriptableObject>("s_LibraryObject");
 
-        public override string Name => "Blueprints";
+        public string Name => "Blueprints";
 
-        public override int Priority => 100;
+        public int Priority => 100;
 
-        public override void OnGUI(UnityModManager.ModEntry modEntry)
+        public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Core == null || !Core.Enabled)
+            if (Mod == null || !Mod.Enabled)
                 return;
 
             if (_buttonStyle == null)
@@ -237,6 +238,5 @@ namespace DataViewer.Menus
                 throw e;
             }
         }
-
     }
 }

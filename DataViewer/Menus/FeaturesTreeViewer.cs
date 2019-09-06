@@ -4,7 +4,8 @@ using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic;
-using ModMaker.Utils;
+using ModMaker;
+using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,24 +13,24 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using static ModMaker.Extensions.RichText;
+using static ModMaker.Utility.RichTextExtensions;
 
 namespace DataViewer.Menus
 {
-    public class FeaturesTreeViewer : ModBase.Menu.ToggleablePage
+    public class FeaturesTreeViewer : IMenuSelectablePage
     {
         private UnitEntityData _selectedCharacter = null;
         private FeaturesTree _featuresTree;
 
         private GUIStyle _buttonStyle;
 
-        public override string Name => "Features Tree";
+        public string Name => "Features Tree";
 
-        public override int Priority => 500;
+        public int Priority => 500;
 
-        public override void OnGUI(UnityModManager.ModEntry modEntry)
+        public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Core == null || !Core.Enabled)
+            if (Mod == null || !Mod.Enabled)
                 return;
 
             string activeScene = SceneManager.GetActiveScene().name;

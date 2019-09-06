@@ -1,5 +1,5 @@
-﻿using ModBase;
-using ModMaker.Utils;
+﻿using ModMaker;
+using ModMaker.Utility;
 using System.Reflection;
 using UnityModManagerNet;
 
@@ -10,13 +10,13 @@ namespace DataViewer
 #endif
     static class Main
     {
-        public static Core<Storage, Settings> Core;
-        public static Menu Menu;
+        public static ModManager<Core, Settings> Mod;
+        public static MenuManager Menu;
 
         static bool Load(UnityModManager.ModEntry modEntry)
         {
-            Core = new Core<Storage, Settings>(modEntry, Assembly.GetExecutingAssembly());
-            Menu = new Menu(modEntry, Assembly.GetExecutingAssembly());
+            Mod = new ModManager<Core, Settings>();
+            Menu = new MenuManager();
             modEntry.OnToggle = OnToggle;
 #if (DEBUG)
             modEntry.OnUnload = Unload;
@@ -25,9 +25,9 @@ namespace DataViewer
 
         static bool Unload(UnityModManager.ModEntry modEntry)
         {
+            Mod.Disable(modEntry, true);
             Menu = null;
-            Core.Disable(modEntry, true);
-            Core = null;
+            Mod = null;
             return true;
         }
 #else
@@ -39,13 +39,14 @@ namespace DataViewer
         {
             if (value)
             {
-                Core.Enable(modEntry);
-                Menu.Enable(modEntry);
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                Mod.Enable(modEntry, assembly);
+                Menu.Enable(modEntry, assembly);
             }
             else
             {
                 Menu.Disable(modEntry);
-                Core.Disable(modEntry, false);
+                Mod.Disable(modEntry, false);
                 ReflectionCache.Clear();
             }
             return true;

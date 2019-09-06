@@ -1,9 +1,9 @@
-﻿using DataViewer.Utils;
+﻿using DataViewer.Utility;
 using Kingmaker;
-using ModMaker.Utils;
+using ModMaker;
+using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,7 +12,7 @@ using static DataViewer.Main;
 
 namespace DataViewer.Menus
 {
-    public class RawDataViewer : ModBase.Menu.ToggleablePage
+    public class RawDataViewer : IMenuSelectablePage
     {
         private static readonly Dictionary<string, Func<object>> TARGET_LIST = new Dictionary<string, Func<object>>()
         {
@@ -38,13 +38,13 @@ namespace DataViewer.Menus
         private ReflectionTreeView _treeView = new ReflectionTreeView();
         private int _targetIndex;
 
-        public override string Name => "Raw Data";
+        public string Name => "Raw Data";
 
-        public override int Priority => 0;
+        public int Priority => 0;
 
-        public override void OnGUI(UnityModManager.ModEntry modEntry)
+        public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Core == null || !Core.Enabled)
+            if (Mod == null || !Mod.Enabled)
                 return;
 
             try
