@@ -9,6 +9,15 @@ using static ModMaker.Utility.ReflectionCache;
 
 namespace DataViewer.Utility.ReflectionTree
 {
+    public enum NodeType
+    {
+        Root,
+        ChildComponent,
+        EnumItem,
+        Field,
+        Property
+    }
+
     public class Tree : Tree<object>
     {
         public Tree(object target) : base(target) { }
@@ -36,6 +45,7 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
+        // the tree will not show any child nodes of following types
         protected static readonly HashSet<Type> BASE_TYPES = new HashSet<Type>()
         {
             typeof(object),
@@ -71,55 +81,37 @@ namespace DataViewer.Utility.ReflectionTree
         protected bool _fieldIsDirty = true;
         protected bool _propertyIsDirty = true;
 
-        public int CustomFlags { get; set; }
+        public readonly Type Type;
+
+        public readonly NodeType NodeType;
 
         public Type InstType { get; protected set; }
 
-        public Type Type { get; }
+        public int CustomFlags { get; set; }
 
         public string Name { get; protected set; }
 
         public abstract string ValueText { get; }
 
-        public bool IsBaseType => InstType == null ?
-            BASE_TYPES.Contains(Nullable.GetUnderlyingType(Type) ?? Type) :
-            BASE_TYPES.Contains(Nullable.GetUnderlyingType(InstType) ?? InstType);
+        public bool IsBaseType => BASE_TYPES.Contains(Nullable.GetUnderlyingType(InstType ?? Type) ?? InstType ?? Type);
 
-        public bool IsGameObject => InstType == null ?
-            typeof(GameObject).IsAssignableFrom(Type) : 
-            typeof(GameObject).IsAssignableFrom(InstType);
+        public bool IsGameObject => typeof(GameObject).IsAssignableFrom(InstType ?? Type);
 
-        public bool IsEnumerable {
-            get {
-                if (!_isEnumerable.HasValue)
-                    _isEnumerable = 
-                        !IsBaseType &&
-                        (InstType == null ?
-                        Type.GetInterfaces().Contains(typeof(IEnumerable)) :
-                        InstType.GetInterfaces().Contains(typeof(IEnumerable)));
-                return _isEnumerable.Value;
-            }
-        }
+        public bool IsEnumerable => _isEnumerable ?? 
+            (_isEnumerable = !IsBaseType && (InstType ?? Type).GetInterfaces().Contains(typeof(IEnumerable))).Value;
 
         public bool IsException { get; protected set; }
 
         public abstract bool IsNull { get; }
 
-        public virtual bool IsChildComponent => false;
-
-        public virtual bool IsEnumItem => false;
-
-        public virtual bool IsField => false;
-
-        public virtual bool IsProperty => false;
-
         public bool IsNullable => Type.IsGenericType && !Type.IsGenericTypeDefinition && Type.GetGenericTypeDefinition() == typeof(Nullable<>);
 
-        protected BaseNode(Type type)
+        protected BaseNode(Type type, NodeType nodeType)
         {
             Type = type;
             if (type.IsValueType && !IsNullable)
                 InstType = type;
+            NodeType = nodeType;
         }
 
         public static IEnumerable<FieldInfo> GetFields(Type type)
@@ -221,7 +213,7 @@ namespace DataViewer.Utility.ReflectionTree
 
         public override bool IsNull => Value == null || ((Value is UnityEngine.Object UnityObj) && UnityObj == null);
 
-        protected GenericNode() : base(typeof(TNode)) { }
+        protected GenericNode(NodeType nodeType) : base(typeof(TNode), nodeType) { }
 
         public override IReadOnlyCollection<BaseNode> GetComponentNodes()
         {
@@ -420,7 +412,7 @@ namespace DataViewer.Utility.ReflectionTree
 
     public class RootNode<TNode> : GenericNode<TNode>
     {
-        public RootNode(string name, TNode target) : base()
+        public RootNode(string name, TNode target) : base(NodeType.Root)
         {
             Name = name;
             Value = target;
@@ -435,13 +427,11 @@ namespace DataViewer.Utility.ReflectionTree
     public class ChildComponentNode<TNode> : GenericNode<TNode>
         where TNode : Component
     {
-        protected ChildComponentNode(string name, TNode target) : base()
+        protected ChildComponentNode(string name, TNode target) : base(NodeType.ChildComponent)
         {
             Name = name;
             Value = target;
         }
-
-        public override bool IsChildComponent => true;
 
         internal override void SetTarget(object target)
         {
@@ -451,13 +441,11 @@ namespace DataViewer.Utility.ReflectionTree
 
     public class ItemOfEnumNode<TNode> : GenericNode<TNode>
     {
-        protected ItemOfEnumNode(string name, TNode target) : base()
+        protected ItemOfEnumNode(string name, TNode target) : base(NodeType.EnumItem)
         {
             Name = name;
             Value = target;
         }
-
-        public override bool IsEnumItem => true;
 
         internal override void SetTarget(object target)
         {
@@ -469,7 +457,7 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected WeakReference<GenericNode<TParent>> _parentNode;
 
-        protected ChildNode(GenericNode<TParent> parentNode, string name) : base()
+        protected ChildNode(GenericNode<TParent> parentNode, string name, NodeType nodeType) : base(nodeType)
         {
             _parentNode = new WeakReference<GenericNode<TParent>>(parentNode);
             Name = name;
@@ -482,7 +470,7 @@ namespace DataViewer.Utility.ReflectionTree
     {
         private readonly Func<TParent, TParentInst> _forceCast = UnsafeForceCast.GetDelegate<TParent, TParentInst>();
 
-        protected ChildOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
+        protected ChildOfStructNode(GenericNode<TParent> parentNode, string name, NodeType nodeType) : base(parentNode, name, nodeType) { }
 
         protected bool TryGetParentValue(out TParentInst value)
         {
@@ -501,7 +489,7 @@ namespace DataViewer.Utility.ReflectionTree
     {
         private readonly Func<TParent, TUnderlying?> _forceCast = UnsafeForceCast.GetDelegate<TParent, TUnderlying?>();
 
-        protected ChildOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
+        protected ChildOfNullableNode(GenericNode<TParent> parentNode, string name, NodeType nodeType) : base(parentNode, name, nodeType) { }
 
         protected bool TryGetParentValue(out TUnderlying value)
         {
@@ -523,7 +511,7 @@ namespace DataViewer.Utility.ReflectionTree
         where TParent : class
         where TParentInst : class
     {
-        protected ChildOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
+        protected ChildOfClassNode(GenericNode<TParent> parentNode, string name, NodeType nodeType) : base(parentNode, name, nodeType) { }
 
         protected bool TryGetParentValue(out TParentInst value)
         {
@@ -541,9 +529,7 @@ namespace DataViewer.Utility.ReflectionTree
     public class FieldOfStructNode<TParent, TParentInst, TNode> : ChildOfStructNode<TParent, TParentInst, TNode>
         where TParentInst : struct
     {
-        protected FieldOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsField => true;
+        protected FieldOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
         public override void UpdateValue()
         {
@@ -563,9 +549,7 @@ namespace DataViewer.Utility.ReflectionTree
     public class PropertyOfStructNode<TParent, TParentInst, TNode> : ChildOfStructNode<TParent, TParentInst, TNode>
         where TParentInst : struct
     {
-        protected PropertyOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsProperty => true;
+        protected PropertyOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
         public override void UpdateValue()
         {
@@ -593,9 +577,7 @@ namespace DataViewer.Utility.ReflectionTree
     public class FieldOfNullableNode<TParent, TUnderlying, TNode> : ChildOfNullableNode<TParent, TUnderlying, TNode>
         where TUnderlying : struct
     {
-        protected FieldOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsField => true;
+        protected FieldOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
         public override void UpdateValue()
         {
@@ -615,9 +597,7 @@ namespace DataViewer.Utility.ReflectionTree
     public class PropertyOfNullableNode<TParent, TUnderlying, TNode> : ChildOfNullableNode<TParent, TUnderlying, TNode>
         where TUnderlying : struct
     {
-        protected PropertyOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsProperty => true;
+        protected PropertyOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
         public override void UpdateValue()
         {
@@ -646,9 +626,7 @@ namespace DataViewer.Utility.ReflectionTree
         where TParent : class
         where TParentInst : class
     {
-        protected FieldOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsField => true;
+        protected FieldOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
         public override void UpdateValue()
         {
@@ -669,9 +647,7 @@ namespace DataViewer.Utility.ReflectionTree
         where TParent : class
         where TParentInst : class
     {
-        protected PropertyOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name) { }
-
-        public override bool IsProperty => true;
+        protected PropertyOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
         public override void UpdateValue()
         {

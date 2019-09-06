@@ -170,9 +170,8 @@ namespace DataViewer.Utility
                     {
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        GUIHelper.ToggleButton(ref expanded,
-                            (node.IsChildComponent ? "[c] " : node.IsEnumItem ? "[i] " : 
-                            node.IsField ? "[f] " : node.IsProperty ? "[p] " : string.Empty).Color(RGBA.grey) +
+                        GUIHelper.ToggleButton(ref expanded, 
+                            GetPrefix(node.NodeType).Color(RGBA.grey) +
                             node.Name + " : " + node.Type.Name.Color(
                                 node.IsGameObject ? RGBA.magenta : node.IsEnumerable ? RGBA.cyan : 
                                 !node.IsBaseType ? RGBA.orange : RGBA.grey),
@@ -200,6 +199,23 @@ namespace DataViewer.Utility
             // children
             if (expanded)
                 DrawChildren(node, depth + 1, collapse, update);
+
+            string GetPrefix(NodeType nodeType)
+            {
+                switch (nodeType)
+                {
+                    case NodeType.ChildComponent:
+                        return "[c] ";
+                    case NodeType.EnumItem:
+                        return "[i] ";
+                    case NodeType.Field:
+                        return "[f] ";
+                    case NodeType.Property:
+                        return "[p] ";
+                    default:
+                        return string.Empty;
+                }
+            }
         }
 
         private void DrawChildren(BaseNode node, int depth, bool collapse, bool update)
