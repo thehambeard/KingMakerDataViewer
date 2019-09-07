@@ -1,10 +1,10 @@
-﻿using DataViewer.Utils.ReflectionTree;
-using ModMaker.Utils;
+﻿using DataViewer.Utility.ReflectionTree;
+using ModMaker.Utility;
 using System;
 using UnityEngine;
-using static ModMaker.Extensions.RichText;
+using static ModMaker.Utility.RichTextExtensions;
 
-namespace DataViewer.Utils
+namespace DataViewer.Utility
 {
     public class ReflectionTreeView
     {
@@ -27,15 +27,15 @@ namespace DataViewer.Utils
 
         public int MaxRows { get; set; } = 20;
 
-        public object Target => _tree.Root.Value;
+        public object Root => _tree.Root;
 
         public float TitleMinWidth { get; set; } = 300f;
 
         public ReflectionTreeView() { }
 
-        public ReflectionTreeView(object target)
+        public ReflectionTreeView(object root)
         {
-            SetTarget(target);
+            SetRoot(root);
         }
 
         public void Clear()
@@ -43,17 +43,17 @@ namespace DataViewer.Utils
             _tree = null;
         }
 
-        public void SetTarget(object target)
+        public void SetRoot(object root)
         {
             if (_tree != null)
-                _tree.SetTarget(target);
+                _tree.SetRoot(root);
             else
-                _tree = new Tree(target);
+                _tree = new Tree(root);
 
-            _tree.Root.CustomFlags |= (int)CustomFlags.expanded;
+            _tree.RootNode.CustomFlags |= (int)CustomFlags.expanded;
         }
 
-        public void OnGUI(bool drawRoot = true, bool collapse = false, bool update = false)
+        public void OnGUI(bool drawRoot = true, bool collapse = false)
         {
             if (_tree == null)
                 return;
@@ -99,7 +99,7 @@ namespace DataViewer.Utils
                     }
 
                     if (GUILayout.Button("Refresh", GUILayout.ExpandWidth(false)))
-                        update = true;
+                        _tree.RootNode.SetDirty();
 
                     GUILayout.Space(10f);
 
@@ -131,9 +131,9 @@ namespace DataViewer.Utils
                         {
                             _nodesCount = 0;
                             if (drawRoot)
-                                DrawNode(_tree.Root, 0, collapse, update);
+                                DrawNode(_tree.RootNode, 0, collapse);
                             else
-                                DrawChildren(_tree.Root, 0, collapse, update);
+                                DrawChildren(_tree.RootNode, 0, collapse);
                         }
 
                         // scrollbar
@@ -152,11 +152,8 @@ namespace DataViewer.Utils
             }
         }
 
-        private void DrawNode(BaseNode node, int depth, bool collapse, bool update)
+        private void DrawNode(Node node, int depth, bool collapse)
         {
-            if (update)
-                node.UpdateValue();
-
             bool expanded = (node.CustomFlags & (int)CustomFlags.expanded) != 0;
 
             if (depth >= _skipLevels && !(collapse && depth > 0))
@@ -169,12 +166,12 @@ namespace DataViewer.Utils
                     {
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        GUIHelper.ToggleButton(ref expanded,
-                            (node.IsChildComponent ? "[c] " : node.IsEnumItem ? "[i] " : 
-                            node.IsField ? "[f] " : node.IsProperty ? "[p] " : string.Empty).Color(RGBA.grey) +
+                        GUIHelper.ToggleButton(ref expanded, 
+                            GetPrefix(node.NodeType).Color(RGBA.grey) +
                             node.Name + " : " + node.Type.Name.Color(
-                                node.IsGameObject ? RGBA.magenta : node.IsEnumerable ? RGBA.cyan : 
-                                !node.IsBaseType ? RGBA.orange : RGBA.grey),
+                                node.IsBaseType ? RGBA.grey :
+                                node.IsGameObject ? RGBA.magenta : 
+                                node.IsEnumerable ? RGBA.cyan : RGBA.orange),
                             () => node.CustomFlags |= (int)CustomFlags.expanded,
                             () => node.CustomFlags &= ~(int)CustomFlags.expanded,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
@@ -186,9 +183,8 @@ namespace DataViewer.Utils
                         GUI.contentColor = originalColor;
 
                         // instance type
-                        if (!node.IsNull && (node.Type != node.InstType || node.IsNullable))
-                            GUILayout.Label((Nullable.GetUnderlyingType(node.InstType) ?? node.InstType).Name
-                                .Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
+                        if (node.InstType != null && node.InstType != node.Type)
+                            GUILayout.Label(node.InstType.Name.Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
                     }
                 }
             }
@@ -198,32 +194,49 @@ namespace DataViewer.Utils
 
             // children
             if (expanded)
-                DrawChildren(node, depth + 1, collapse, update);
+                DrawChildren(node, depth + 1, collapse);
+
+            string GetPrefix(NodeType nodeType)
+            {
+                switch (nodeType)
+                {
+                    case NodeType.Component:
+                        return "[c] ";
+                    case NodeType.Item:
+                        return "[i] ";
+                    case NodeType.Field:
+                        return "[f] ";
+                    case NodeType.Property:
+                        return "[p] ";
+                    default:
+                        return string.Empty;
+                }
+            }
         }
 
-        private void DrawChildren(BaseNode node, int depth, bool collapse, bool update)
+        private void DrawChildren(Node node, int depth, bool collapse)
         {
             if (node.IsBaseType)
                 return;
 
-            foreach (BaseNode child in node.GetEnumNodes())
+            foreach (Node child in node.GetItemNodes())
             {
-                DrawNode(child, depth, collapse, update);
+                DrawNode(child, depth, collapse);
             }
 
-            foreach (BaseNode child in node.GetComponentNodes())
+            foreach (Node child in node.GetComponentNodes())
             {
-                DrawNode(child, depth, collapse, update);
+                DrawNode(child, depth, collapse);
             }
 
-            foreach (BaseNode child in node.GetFieldNodes())
+            foreach (Node child in node.GetFieldNodes())
             {
-                DrawNode(child, depth, collapse, update);
+                DrawNode(child, depth, collapse);
             }
 
-            foreach (BaseNode child in node.GetPropertyNodes())
+            foreach (Node child in node.GetPropertyNodes())
             {
-                DrawNode(child, depth, collapse, update);
+                DrawNode(child, depth, collapse);
             }
         }
     }

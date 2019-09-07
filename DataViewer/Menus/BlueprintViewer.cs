@@ -1,7 +1,8 @@
-﻿using DataViewer.Utils;
-using DataViewer.Utils.ReflectionTree;
+﻿using DataViewer.Utility;
+using DataViewer.Utility.ReflectionTree;
 using Kingmaker.Blueprints;
-using ModMaker.Utils;
+using ModMaker;
+using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ using static DataViewer.Main;
 
 namespace DataViewer.Menus
 {
-    public class BlueprintViewer : ModBase.Menu.ToggleablePage
+    public class BlueprintViewer : IMenuSelectablePage
     {
         // blueprint info
         private Type[] _bpTypes;
@@ -49,13 +50,13 @@ namespace DataViewer.Menus
         private LibraryScriptableObject _library 
             => typeof(ResourcesLibrary).GetFieldValue<LibraryScriptableObject>("s_LibraryObject");
 
-        public override string Name => "Blueprints";
+        public string Name => "Blueprints";
 
-        public override int Priority => 100;
+        public int Priority => 100;
 
-        public override void OnGUI(UnityModManager.ModEntry modEntry)
+        public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Core == null || !Core.Enabled)
+            if (Mod == null || !Mod.Enabled)
                 return;
 
             if (_buttonStyle == null)
@@ -125,13 +126,13 @@ namespace DataViewer.Menus
                                     }
                                     else
                                     {
-                                        _bpFields = BaseNode.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
-                                        _bpProperties = BaseNode.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpFields = Node.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
+                                        _bpProperties = Node.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
                                         _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).ToArray();
                                         _searchIndex = Array.IndexOf(_bpChildNames, "name");
 
                                         _blueprints = _library.GetAllBlueprints().Where(item => item.GetType() == _bpTypes[_bpTypeIndex]).ToList();
-                                        _treeView.SetTarget(_blueprints);
+                                        _treeView.SetRoot(_blueprints);
                                     }
                                 }, _buttonStyle, GUILayout.ExpandWidth(false));
 
@@ -203,18 +204,18 @@ namespace DataViewer.Menus
                         {
                             if (string.IsNullOrEmpty(_searchText))
                             {
-                                _treeView.SetTarget(_blueprints);
+                                _treeView.SetRoot(_blueprints);
                             }
                             else
                             {
                                 if (_bpFields.TryGetValue(_bpChildNames[_searchIndex], out FieldInfo f))
-                                    _treeView.SetTarget(_blueprints.Where(bp =>
+                                    _treeView.SetRoot(_blueprints.Where(bp =>
                                     {
                                         try { return (f.GetValue(bp)?.ToString().Contains(_searchText) ?? false) != _searchReversed; }
                                         catch { return _searchReversed; }
                                     }).ToList());
                                 else if (_bpProperties.TryGetValue(_bpChildNames[_searchIndex], out PropertyInfo p))
-                                    _treeView.SetTarget(_blueprints.Where(bp =>
+                                    _treeView.SetRoot(_blueprints.Where(bp =>
                                     {
                                         try { return (p.GetValue(bp)?.ToString().Contains(_searchText) ?? false) != _searchReversed; }
                                         catch { return _searchReversed; }
@@ -226,7 +227,7 @@ namespace DataViewer.Menus
                     GUILayout.Space(10f);
 
                     // tree view
-                    _treeView.OnGUI(true, false, false);
+                    _treeView.OnGUI(true, false);
                 }
             }
             catch (Exception e)
@@ -237,6 +238,5 @@ namespace DataViewer.Menus
                 throw e;
             }
         }
-
     }
 }

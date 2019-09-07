@@ -1,8 +1,8 @@
-﻿using ModMaker.Utils;
+﻿using ModMaker.Utility;
 using System;
 using System.Reflection.Emit;
 
-namespace DataViewer.Utils
+namespace DataViewer.Utility
 {
     internal static class UnsafeForceCast
     {

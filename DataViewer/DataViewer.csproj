@@ -11,7 +11,7 @@
     <AssemblyName>DataViewer</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
+    <Deterministic>false</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,47 +41,60 @@
     <Compile Include="Menus\PatchesViewer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Storage.cs" />
-    <Compile Include="Utils\ReflectionTree.cs" />
-    <Compile Include="Utils\ReflectionTreeView.cs" />
-    <Compile Include="Utils\UnsafeForceCast.cs" />
+    <Compile Include="Core.cs" />
+    <Compile Include="Utility\ReflectionTree.cs" />
+    <Compile Include="Utility\ReflectionTreeView.cs" />
+    <Compile Include="Utility\UnsafeForceCast.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony12">
-      <HintPath>E:\Game\Unity Mod Manager\0Harmony12.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityModManager\0Harmony12.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>E:\Game\Pathfinder Kingmaker\Kingmaker_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>E:\Game\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>E:\Game\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>E:\Game\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>E:\Game\Pathfinder Kingmaker\Kingmaker_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityModManager">
-      <HintPath>E:\Game\Unity Mod Manager\UnityModManager.dll</HintPath>
+      <HintPath>..\..\KingmakerLib\UnityModManager\UnityModManager.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Info.json" />
+    <None Include="Repository.json" />
   </ItemGroup>
-  <Import Project="..\ModBase\ModBase.projitems" Label="Shared" />
-  <Import Project="..\ModMaker\ModMaker.projitems" Label="Shared" />
+  <ItemGroup>
+    <Content Include="ChangeLog.txt" />
+  </ItemGroup>
+  <Import Project="..\..\KingmakerModMaker\ModMaker\ModMaker.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>rd "$(TargetDir)DataViewer"  /s /q
+mkdir "$(TargetDir)DataViewer"
+copy "$(TargetPath)" "$(TargetDir)DataViewer" /y
+copy "$(ProjectDir)\Info.json" "$(TargetDir)DataViewer\Info.json" /y</PostBuildEvent>
+  </PropertyGroup>
 </Project>

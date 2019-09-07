@@ -1,4 +1,5 @@
 ﻿using Harmony12;
+using ModMaker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,11 +7,11 @@ using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using static ModMaker.Extensions.RichText;
+using static ModMaker.Utility.RichTextExtensions;
 
 namespace DataViewer.Menus
 {
-    public class PatchesViewer : ModBase.Menu.ToggleablePage
+    public class PatchesViewer : IMenuSelectablePage
     {
         private Dictionary<string, string> _modIdsToColor;
         private string _modId;
@@ -18,13 +19,13 @@ namespace DataViewer.Menus
 
         private GUIStyle _buttonStyle;
 
-        public override string Name => "Patches";
+        public string Name => "Patches";
 
-        public override int Priority => 900;
+        public int Priority => 900;
 
-        public override void OnGUI(UnityModManager.ModEntry modEntry)
+        public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Core == null || !Core.Enabled)
+            if (Mod == null || !Mod.Enabled)
                 return;
 
             if (_buttonStyle == null)
@@ -115,7 +116,7 @@ namespace DataViewer.Menus
 
                         using (new GUILayout.VerticalScope())
                         {
-                            GUILayout.Label(item.Key.DeclaringType.FullName + "." + item.Key.Name, _buttonStyle);
+                            GUILayout.Label(item.Key.DeclaringType.FullName + "." + item.Key.ToString(), _buttonStyle);
 
                             using (new GUILayout.HorizontalScope())
                             {

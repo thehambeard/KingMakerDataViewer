@@ -1,6 +1,6 @@
 ﻿namespace DataViewer
 {
-    public class Storage
+    public class Core
     {
 
     }
