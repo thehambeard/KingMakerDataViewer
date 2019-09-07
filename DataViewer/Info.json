@@ -6,5 +6,5 @@
   "ManagerVersion": "0.14.1",
   "EntryMethod": "DataViewer.Main.Load",
   "HomePage": "https://www.nexusmods.com/pathfinderkingmaker/mods/106",
-  "Repository": ""
+  "Repository": "https://raw.githubusercontent.com/hsinyuhcan/KingmakerDataViewer/master/DataViewer/Repository.json"
 }
