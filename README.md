@@ -5,20 +5,20 @@ https://www.nexusmods.com/pathfinderkingmaker/mods/106
 This project depends on [ModMaker](https://github.com/hsinyuhcan/KingmakerModMaker), you need both repos in the same folder, and a folder called `KingmakerLib` including the Dll files. The folder structure should look like:
 ```
 Repos
-¢x
-¢u¢w¢w KingmakerLib
-¢x   ¢u¢w¢w UnityModManager
-¢x   ¢x   ¢u¢w¢w 0Harmony12.dll
-¢x   ¢x   ¢|¢w¢w UnityModManager.dll
-¢x   ¢|¢w¢w *.dll
-¢x
-¢u¢w¢w KingmakerModMaker
-¢x   ¢u¢w¢w ModMaker
-¢x   ¢x   ¢|¢w¢w ModMaker.shproj
-¢x   ¢|¢w¢w ModMaker.sln
-¢x
-¢|¢w¢w KingmakerDataViewer
-    ¢u¢w¢w DataViewer
-    ¢x   ¢|¢w¢w DataViewer.csproj
-    ¢|¢w¢w DataViewer.sln
+â”‚
+â”œâ”€â”€ KingmakerLib
+â”‚   â”œâ”€â”€ UnityModManager
+â”‚   â”‚   â”œâ”€â”€ 0Harmony12.dll
+â”‚   â”‚   â””â”€â”€ UnityModManager.dll
+â”‚   â””â”€â”€ *.dll
+â”‚
+â”œâ”€â”€ KingmakerModMaker
+â”‚   â”œâ”€â”€ ModMaker
+â”‚   â”‚   â””â”€â”€ ModMaker.shproj
+â”‚   â””â”€â”€ ModMaker.sln
+â”‚
+â””â”€â”€ KingmakerDataViewer
+    â”œâ”€â”€ DataViewer
+    â”‚   â””â”€â”€ DataViewer.csproj
+    â””â”€â”€ DataViewer.sln
 ```
