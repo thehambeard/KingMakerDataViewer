@@ -20,7 +20,7 @@ namespace DataViewer.Utility.ReflectionTree
 
     public class Tree : Tree<object>
     {
-        public Tree(object target) : base(target) { }
+        public Tree(object root) : base(root) { }
     }
 
     public class Tree<TRoot>
@@ -49,47 +49,9 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        // the tree will not show any child nodes of following types
-        protected static readonly HashSet<Type> BASE_TYPES = new HashSet<Type>()
-        {
-            typeof(object),
-            typeof(DBNull),
-            typeof(bool),
-            typeof(char),
-            typeof(sbyte),
-            typeof(byte),
-            typeof(short),
-            typeof(ushort),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(float),
-            typeof(double),
-            typeof(decimal),
-            //typeof(DateTime),
-            typeof(string),
-            typeof(IntPtr),
-            typeof(UIntPtr)
-        };
-
-        protected bool? _isEnumerable;
-
-        protected List<Node> _componentNodes;
-        protected List<Node> _enumNodes;
-        protected List<Node> _fieldNodes;
-        protected List<Node> _propertyNodes;
-
-        protected bool _componentIsDirty = true;
-        protected bool _enumIsDirty = true;
-        protected bool _fieldIsDirty = true;
-        protected bool _propertyIsDirty = true;
-
-        public readonly Type Type;
-
         public readonly NodeType NodeType;
-
-        public Type InstType { get; protected set; }
+        public readonly Type Type;
+        public readonly bool IsNullable;
 
         public int CustomFlags { get; set; }
 
@@ -97,25 +59,23 @@ namespace DataViewer.Utility.ReflectionTree
 
         public abstract string ValueText { get; }
 
-        public bool IsBaseType => BASE_TYPES.Contains(Nullable.GetUnderlyingType(InstType ?? Type) ?? InstType ?? Type);
+        public abstract Type InstType { get; }
 
-        public bool IsGameObject => typeof(GameObject).IsAssignableFrom(InstType ?? Type);
+        public abstract bool IsBaseType { get; }
 
-        public bool IsEnumerable => _isEnumerable ?? 
-            (_isEnumerable = !IsBaseType && (InstType ?? Type).GetInterfaces().Contains(typeof(IEnumerable))).Value;
+        public abstract bool IsEnumerable { get; }
 
-        public bool IsException { get; protected set; }
+        public abstract bool IsException { get; }
+
+        public abstract bool IsGameObject { get; }
 
         public abstract bool IsNull { get; }
 
-        public bool IsNullable => Type.IsGenericType && !Type.IsGenericTypeDefinition && Type.GetGenericTypeDefinition() == typeof(Nullable<>);
-
         protected Node(Type type, NodeType nodeType)
         {
-            Type = type;
-            if (type.IsValueType && !IsNullable)
-                InstType = type;
             NodeType = nodeType;
+            Type = type;
+            IsNullable = Type.IsGenericType && !Type.IsGenericTypeDefinition && Type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
         public static IEnumerable<FieldInfo> GetFields(Type type)
@@ -147,77 +107,127 @@ namespace DataViewer.Utility.ReflectionTree
 
         public abstract IReadOnlyCollection<Node> GetComponentNodes();
 
-        public abstract IReadOnlyCollection<Node> GetEnumNodes();
+        public abstract IReadOnlyCollection<Node> GetItemNodes();
 
         public abstract IReadOnlyCollection<Node> GetFieldNodes();
 
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
 
+        public abstract void SetDirty();
+
         internal abstract void SetValue(object value);
 
-        public abstract void UpdateValue();
+        protected abstract void UpdateValue();
     }
 
     internal abstract class GenericNode<TNode> : Node
     {
-        protected TNode _value;
+        // the tree will not show any child nodes of following types
+        private static readonly HashSet<Type> BASE_TYPES = new HashSet<Type>()
+        {
+            typeof(object),
+            typeof(DBNull),
+            typeof(bool),
+            typeof(char),
+            typeof(sbyte),
+            typeof(byte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
+            //typeof(DateTime),
+            typeof(string),
+            typeof(IntPtr),
+            typeof(UIntPtr)
+        };
+
+        private Type _instType;
+        private bool? _isBaseType;
+        private bool? _isEnumerable;
+        private bool? _isGameObject;
+
+        private TNode _value;
+        private bool _valueIsDirty = true;
+
+        private List<Node> _componentNodes;
+        private List<Node> _itemNodes;
+        private List<Node> _fieldNodes;
+        private List<Node> _propertyNodes;
+        private bool _componentIsDirty;
+        private bool _itemIsDirty;
+        private bool _fieldIsDirty;
+        private bool _propertyIsDirty;
 
         public TNode Value {
             get {
+                UpdateValue();
                 return _value;
             }
             protected set {
-                if (value == null)
+                if (!value?.Equals(_value) ?? _value != null)
                 {
-                    if (_value != null)
+                    _value = value;
+                    if (!Type.IsValueType || IsNullable)
                     {
-                        InstType = null;
-                        _fieldIsDirty = true;
-                        _propertyIsDirty = true;
-                        _isEnumerable = null;
-                        _enumIsDirty = true;
-                    }
-                }
-                else
-                {
-                    if (!value.Equals(_value))
-                    {
-                        // value changed
-                        if (Type.IsSealed)
+                        Type oldType = _instType;
+                        _instType = value?.GetType();
+                        if (_instType != oldType)
                         {
-                            InstType = Type;
-                            //InstType = value.GetType();
-                        }
-                        else
-                        {
-                            Type oldInstType = InstType;
-                            InstType = value.GetType();
-
-                            if (InstType != oldInstType)
-                            {
-                                // type changed
-                                _fieldIsDirty = true;
-                                _propertyIsDirty = true;
-                                _isEnumerable = null;
-                            }
+                            _isBaseType = null;
+                            _isEnumerable = null;
+                            _isGameObject = null;
+                            _fieldIsDirty = true;
+                            _propertyIsDirty = true;
                         }
                     }
-
-                    //if (InstType == null)
-                    //    InstType = Type;
                 }
-                // component / enum elements 'may' changed
-                _componentIsDirty = true;
-                _enumIsDirty = true;
-                _value = value;
             }
         }
 
         public override string ValueText => IsException ? "<exception>" : IsNull ? "<null>" : Value.ToString();
 
+        public override Type InstType {
+            get {
+                UpdateValue();
+                return _instType;
+            }
+        }
+
+        public override bool IsBaseType {
+            get {
+                UpdateValue();
+                return _isBaseType ?? (_isBaseType = BASE_TYPES.Contains(Nullable.GetUnderlyingType(InstType ?? Type) ?? InstType ?? Type)).Value;
+            }
+        }
+
+        public override bool IsEnumerable {
+            get {
+                UpdateValue();
+                return _isEnumerable ?? (_isEnumerable = (InstType ?? Type).GetInterfaces().Contains(typeof(IEnumerable))).Value;
+            }
+        }
+
+        public override bool IsGameObject {
+            get {
+                UpdateValue();
+                return _isGameObject ?? (_isGameObject = typeof(GameObject).IsAssignableFrom(InstType ?? Type)).Value;
+            }
+        }
+
         public override bool IsNull => Value == null || ((Value is UnityEngine.Object unityObject) && !unityObject);
 
-        protected GenericNode(NodeType nodeType) : base(typeof(TNode), nodeType) { }
+        protected GenericNode(NodeType nodeType) : base(typeof(TNode), nodeType)
+        {
+            if (Type.IsValueType && !IsNullable)
+            {
+                _instType = Type;
+            }
+        }
 
         public override IReadOnlyCollection<Node> GetComponentNodes()
         {
@@ -225,10 +235,10 @@ namespace DataViewer.Utility.ReflectionTree
             return _componentNodes.AsReadOnly();
         }
 
-        public override IReadOnlyCollection<Node> GetEnumNodes()
+        public override IReadOnlyCollection<Node> GetItemNodes()
         {
-            UpdateEnumNodes();
-            return _enumNodes.AsReadOnly();
+            UpdateItemNodes();
+            return _itemNodes.AsReadOnly();
         }
 
         public override IReadOnlyCollection<Node> GetFieldNodes()
@@ -243,68 +253,25 @@ namespace DataViewer.Utility.ReflectionTree
             return _propertyNodes.AsReadOnly();
         }
 
-        private void BuildChildNodes(ref List<Node> nodes, IEnumerable<Tuple<string, Type>> nameAndTypeOfNodes,
-            Type structNode, Type nullableNode, Type classNode)
+        public override void SetDirty()
         {
-            if (nodes == null)
-                nodes = new List<Node>();
-            else
-                nodes.Clear();
-
-            if (IsException || IsNull)
-                return;
-
-            if (InstType.IsValueType)
-            {
-                if (!IsNullable)
-                {
-                    nodes = nameAndTypeOfNodes.Select(child => Activator.CreateInstance(
-                            structNode.MakeGenericType(Type, InstType, child.Item2),
-                            ALL_FLAGS, null, new object[] { this, child.Item1 }, null) as Node).ToList();
-                }
-                else
-                {
-                    Type underlying = Nullable.GetUnderlyingType(InstType) ?? InstType;
-                    nodes = nameAndTypeOfNodes.Select(child => Activator.CreateInstance(
-                            nullableNode.MakeGenericType(Type, underlying, child.Item2),
-                            ALL_FLAGS, null, new object[] { this, child.Item1 }, null) as Node).ToList();
-                }
-            }
-            else
-            {
-                nodes = nameAndTypeOfNodes.Select(child => Activator.CreateInstance(
-                        classNode.MakeGenericType(Type, InstType, child.Item2),
-                        ALL_FLAGS, null, new object[] { this, child.Item1 }, null) as Node).ToList();
-            }
-
-            nodes.Sort((x, y) => x.Name.CompareTo(y.Name));
-        }
-
-        private IEnumerable<Tuple<string, Type>> GetNameAndTypeOfFields()
-        {
-            foreach (FieldInfo field in GetFields(InstType))
-            {
-                yield return new Tuple<string, Type>(field.Name, field.FieldType);
-            }
-        }
-
-        private IEnumerable<Tuple<string, Type>> GetNameAndTypeOfProperties()
-        {
-            foreach (PropertyInfo property in GetProperties(InstType))
-            {
-                yield return new Tuple<string, Type>(property.Name, property.PropertyType);
-            }
+            _valueIsDirty = true;
         }
 
         private void UpdateComponentNodes()
         {
-            if (!_componentIsDirty)
+            UpdateValue();
+            if (!_componentIsDirty && _componentNodes != null)
+            {
                 return;
+            }
 
             _componentIsDirty = false;
 
             if (_componentNodes == null)
+            {
                 _componentNodes = new List<Node>();
+            }
 
             if (IsException || IsNull || !IsGameObject)
             {
@@ -312,100 +279,166 @@ namespace DataViewer.Utility.ReflectionTree
                 return;
             }
 
-            Type nodeType = typeof(ComponentNode<Component>);
+            Type nodeType = typeof(ComponentNode);
             int i = 0;
             int count = _componentNodes.Count;
             foreach (Component item in (Value as GameObject).GetComponents<Component>())
             {
                 if (i < count)
-                {
-                    _componentNodes[i].SetValue(item);
-                }
+                    (_componentNodes[i] as ComponentNode).SetValue(item);
                 else
-                {
                     _componentNodes.Add(Activator.CreateInstance(
                         nodeType, ALL_FLAGS, null, new object[] { "<component_" + i + ">", item }, null) as Node);
-                }
                 i++;
             }
+
             if (i < count)
+            {
                 _componentNodes.RemoveRange(i, count - i);
+            }
         }
 
-        private void UpdateEnumNodes()
+        private void UpdateItemNodes()
         {
-            if (!_enumIsDirty)
+            UpdateValue();
+
+            if (!_itemIsDirty && _itemNodes != null)
+            {
                 return;
+            }
 
-            _enumIsDirty = false;
+            _itemIsDirty = false;
 
-            if (_enumNodes == null)
-                _enumNodes = new List<Node>();
+            if (_itemNodes == null)
+            {
+                _itemNodes = new List<Node>();
+            }
 
             if (IsException || IsNull || !IsEnumerable)
             {
-                _enumNodes.Clear();
+                _itemNodes.Clear();
                 return;
             }
 
-            IEnumerable<Type> enumGenericArg = InstType.GetInterfaces()
+            IEnumerable<Type> itemTypes = InstType.GetInterfaces()
                 .Where(item => item.IsGenericType && item.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 .Select(item => item.GetGenericArguments()[0]);
-
-            Type itemType;
-            if (enumGenericArg.Count() != 1)
-                itemType = typeof(object);
-            else
-                itemType = enumGenericArg.First();
-
+            Type itemType = itemTypes.Count() == 1 ? itemTypes.First() : typeof(object);
             Type nodeType = typeof(ItemNode<>).MakeGenericType(itemType);
             int i = 0;
-            int count = _enumNodes.Count;
+            int count = _itemNodes.Count;
             foreach (object item in Value as IEnumerable)
             {
                 if (i < count)
                 {
-                    if (_enumNodes[i].Type == itemType)
-                        _enumNodes[i].SetValue(item);
+                    if (_itemNodes[i].Type == itemType)
+                        _itemNodes[i].SetValue(item);
                     else
-                        _enumNodes[i] = Activator.CreateInstance(
+                        _itemNodes[i] = Activator.CreateInstance(
                             nodeType, ALL_FLAGS, null, new object[] { "<item_" + i + ">", item }, null) as Node;
                 }
                 else
                 {
-                    _enumNodes.Add(Activator.CreateInstance(
+                    _itemNodes.Add(Activator.CreateInstance(
                         nodeType, ALL_FLAGS, null, new object[] { "<item_" + i + ">", item }, null) as Node);
                 }
                 i++;
             }
 
             if (i < count)
-                _enumNodes.RemoveRange(i, count - i);
+            {
+                _itemNodes.RemoveRange(i, count - i);
+            }
         }
 
         private void UpdateFieldNodes()
         {
-            if ( _fieldIsDirty)
+            UpdateValue();
+
+            if (!_fieldIsDirty && _fieldNodes != null)
             {
-                _fieldIsDirty = false;
-                BuildChildNodes(ref _fieldNodes, GetNameAndTypeOfFields(),
-                    typeof(FieldOfStructNode<,,>), typeof(FieldOfNullableNode<,,>), typeof(FieldOfClassNode<,,>));
+                return;
             }
+
+            _fieldIsDirty = false;
+
+            if (IsException || IsNull)
+            {
+                if (_fieldNodes == null)
+                    _fieldNodes = new List<Node>();
+                else
+                    _fieldNodes.Clear();
+                return;
+            }
+
+            Type nodeType = InstType.IsValueType ? !IsNullable ?
+                typeof(FieldOfStructNode<,,>) : typeof(FieldOfNullableNode<,,>) : typeof(FieldOfClassNode<,,>);
+
+            _fieldNodes = GetFields(InstType).Select(child => Activator.CreateInstance(
+                nodeType.MakeGenericType(Type, InstType, child.FieldType),
+                ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
+
+            _fieldNodes.Sort((x, y) => x.Name.CompareTo(y.Name));
         }
 
         private void UpdatePropertyNodes()
         {
-            if (_propertyIsDirty)
+            UpdateValue();
+
+            if (!_propertyIsDirty && _propertyNodes != null)
             {
-                _propertyIsDirty = false;
-                BuildChildNodes(ref _propertyNodes, GetNameAndTypeOfProperties(),
-                        typeof(PropertyOfStructNode<,,>), typeof(PropertyOfNullableNode<,,>), typeof(PropertyOfClassNode<,,>));
+                return;
+            }
+
+            _propertyIsDirty = false;
+
+            if (IsException || IsNull)
+            {
+                if (_propertyNodes == null)
+                    _propertyNodes = new List<Node>();
+                else
+                    _propertyNodes.Clear();
+                return;
+            }
+
+            Type nodeType = InstType.IsValueType ? !IsNullable ?
+                typeof(PropertyOfStructNode<,,>) : typeof(PropertyOfNullableNode<,,>) : typeof(PropertyOfClassNode<,,>);
+
+            _propertyNodes = GetProperties(InstType).Select(child => Activator.CreateInstance(
+                nodeType.MakeGenericType(Type, InstType, child.PropertyType), 
+                ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
+
+            _propertyNodes.Sort((x, y) => x.Name.CompareTo(y.Name));
+        }
+
+        protected override void UpdateValue()
+        {
+            if (_valueIsDirty)
+            {
+                _valueIsDirty = false;
+
+                _componentIsDirty = true;
+                _itemIsDirty = true;
+
+                if (_fieldNodes != null)
+                    foreach (Node child in _fieldNodes)
+                        child.SetDirty();
+
+                if (_propertyNodes != null)
+                    foreach (Node child in _propertyNodes)
+                        child.SetDirty();
+
+                UpdateValueImpl();
             }
         }
+
+        protected abstract void UpdateValueImpl();
     }
 
     internal abstract class PassiveNode<TNode> : GenericNode<TNode>
     {
+        public override bool IsException => false;
+
         public PassiveNode(string name, TNode value, NodeType nodeType) : base(nodeType)
         {
             Name = name;
@@ -414,13 +447,17 @@ namespace DataViewer.Utility.ReflectionTree
 
         internal override void SetValue(object value)
         {
+            SetDirty();
             Value = (TNode)value;
         }
 
-        public override void UpdateValue()
+        internal void SetValue(TNode value)
         {
-            Value = Value;
+            SetDirty();
+            Value = value;
         }
+
+        protected override void UpdateValueImpl() { }
     }
 
     internal class RootNode<TNode> : PassiveNode<TNode>
@@ -428,10 +465,9 @@ namespace DataViewer.Utility.ReflectionTree
         public RootNode(string name, TNode value) : base(name, value, NodeType.Root) { }
     }
 
-    internal class ComponentNode<TNode> : PassiveNode<TNode> 
-        where TNode : Component
+    internal class ComponentNode : PassiveNode<Component> 
     {
-        protected ComponentNode(string name, TNode value) : base(name, value, NodeType.Component) { }
+        protected ComponentNode(string name, Component value) : base(name, value, NodeType.Component) { }
     }
 
     internal class ItemNode<TNode> : PassiveNode<TNode>
@@ -441,13 +477,20 @@ namespace DataViewer.Utility.ReflectionTree
 
     internal abstract class ChildNode<TParent, TNode> : GenericNode<TNode>
     {
-        protected WeakReference<GenericNode<TParent>> _parentNode;
+        protected bool _isException;
+        protected readonly WeakReference<GenericNode<TParent>> _parentNode;
+
+        public override bool IsException {
+            get {
+                UpdateValue();
+                return _isException;
+            }
+        }
 
         protected ChildNode(GenericNode<TParent> parentNode, string name, NodeType nodeType) : base(nodeType)
         {
             _parentNode = new WeakReference<GenericNode<TParent>>(parentNode);
             Name = name;
-            UpdateValue();
         }
 
         internal override void SetValue(object value)
@@ -519,16 +562,16 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected FieldOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TParentInst parentValue))
             {
-                IsException = false;
+                _isException = false;
                 Value = parentValue.GetFieldValue<TParentInst, TNode>(Name);
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }
@@ -539,24 +582,24 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected PropertyOfStructNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TParentInst parentValue))
             {
                 try
                 {
-                    IsException = false;
+                    _isException = false;
                     Value = parentValue.GetPropertyValue<TParentInst, TNode>(Name);
                 }
                 catch
                 {
-                    IsException = true;
+                    _isException = true;
                     Value = default;
                 }
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }
@@ -567,16 +610,16 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected FieldOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TUnderlying parentValue))
             {
-                IsException = false;
+                _isException = false;
                 Value = parentValue.GetFieldValue<TUnderlying, TNode>(Name);
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }
@@ -587,24 +630,24 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected PropertyOfNullableNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TUnderlying parentValue))
             {
                 try
                 {
-                    IsException = false;
+                    _isException = false;
                     Value = parentValue.GetPropertyValue<TUnderlying, TNode>(Name);
                 }
                 catch
                 {
-                    IsException = true;
+                    _isException = true;
                     Value = default;
                 }
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }
@@ -615,16 +658,16 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected FieldOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Field) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TParentInst parentValue))
             {
-                IsException = false;
+                _isException = false;
                 Value = parentValue.GetFieldValue<TParentInst, TNode>(Name);
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }
@@ -635,24 +678,24 @@ namespace DataViewer.Utility.ReflectionTree
     {
         protected PropertyOfClassNode(GenericNode<TParent> parentNode, string name) : base(parentNode, name, NodeType.Property) { }
 
-        public override void UpdateValue()
+        protected override void UpdateValueImpl()
         {
             if (TryGetParentValue(out TParentInst parentValue))
             {
                 try
                 {
-                    IsException = false;
+                    _isException = false;
                     Value = parentValue.GetPropertyValue<TParentInst, TNode>(Name);
                 }
                 catch
                 {
-                    IsException = true;
+                    _isException = true;
                     Value = default;
                 }
             }
             else
             {
-                IsException = true;
+                _isException = true;
                 Value = default;
             }
         }

@@ -52,11 +52,11 @@ namespace DataViewer.Menus
                 // target selection
                 GUIHelper.SelectionGrid(ref _targetIndex, _targetNames, 5, () =>
                 {
-                    Func<object> getTargetDel = TARGET_LIST[_targetNames[_targetIndex]];
-                    if (getTargetDel == null)
+                    Func<object> getTarget = TARGET_LIST[_targetNames[_targetIndex]];
+                    if (getTarget == null)
                         _treeView.Clear();
                     else
-                        _treeView.SetTarget(getTargetDel());
+                        _treeView.SetRoot(getTarget());
                 });
 
                 // tree view
