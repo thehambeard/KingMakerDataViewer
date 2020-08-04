@@ -1,4 +1,4 @@
-﻿using Harmony12;
+﻿using HarmonyLib;
 using ModMaker;
 using System;
 using System.Collections.Generic;
@@ -124,7 +124,7 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        GUILayout.Label(patch.patch.Name, _buttonStyle);
+                                        GUILayout.Label(patch.PatchMethod.Name, _buttonStyle);
                                     }
                                 }
 
@@ -148,7 +148,8 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        GUILayout.Label(patch.patch.DeclaringType.DeclaringType?.Name, _buttonStyle);
+                                        
+                                        GUILayout.Label(patch.PatchMethod.DeclaringType.DeclaringType?.Name, _buttonStyle);
                                     }
                                 }
 
@@ -156,7 +157,7 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        GUILayout.Label(patch.patch.DeclaringType.Name, _buttonStyle);
+                                        GUILayout.Label(patch.PatchMethod.DeclaringType.Name, _buttonStyle);
                                     }
                                 }
 
@@ -182,10 +183,10 @@ namespace DataViewer.Menus
             if (reset || _modIdsToColor == null)
                 _modIdsToColor = new Dictionary<string, string>();
 
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
+            Harmony harmonyInstance = new Harmony(_modId);
             foreach (Patch patch in harmonyInstance.GetPatchedMethods().SelectMany(method =>
             {
-                Patches patches = harmonyInstance.GetPatchInfo(method);
+                Patches patches = Harmony.GetPatchInfo(method);
                 return patches.Prefixes.Concat(patches.Transpilers).Concat(patches.Postfixes);
             }))
             {
@@ -197,7 +198,7 @@ namespace DataViewer.Menus
         private void RefreshPatchInfoOfAllMods(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
+            Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 _patches.Add(method, GetSortedPatches(harmonyInstance, method).ToList());
@@ -207,7 +208,7 @@ namespace DataViewer.Menus
         private void RefreshPatchInfoOfSelected(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
+            Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 IEnumerable<Patch> patches =
@@ -222,7 +223,7 @@ namespace DataViewer.Menus
         private void RefreshPatchInfoOfPotentialConflict(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
+            Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 IEnumerable<Patch> patches = GetSortedPatches(harmonyInstance, method);
@@ -233,9 +234,9 @@ namespace DataViewer.Menus
             }
         }
 
-        private IEnumerable<Patch> GetSortedPatches(HarmonyInstance harmonyInstance, MethodBase method)
+        private IEnumerable<Patch> GetSortedPatches(Harmony harmonyInstance, MethodBase method)
         {
-            Patches patches = harmonyInstance.GetPatchInfo(method);
+            Patches patches = Harmony.GetPatchInfo(method);
             return patches.Prefixes.OrderByDescending(patch => patch.priority)
                 .Concat(patches.Transpilers.OrderByDescending(patch => patch.priority))
                 .Concat(patches.Postfixes.OrderByDescending(patch => patch.priority));

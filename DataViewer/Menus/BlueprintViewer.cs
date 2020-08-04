@@ -47,9 +47,6 @@ namespace DataViewer.Menus
 
         private GUIStyle _buttonStyle;
 
-        private LibraryScriptableObject _library 
-            => typeof(ResourcesLibrary).GetFieldValue<LibraryScriptableObject>("s_LibraryObject");
-
         public string Name => "Blueprints";
 
         public int Priority => 100;
@@ -69,9 +66,9 @@ namespace DataViewer.Menus
                     // refresh blueprint types
                     if (_bpTypeNames == null)
                     {
-                        if (_library != null)
+                        if (ResourcesLibrary.LibraryObject != null)
                         {
-                            _bpTypes = new Type[] { null }.Concat(_library.GetAllBlueprints()
+                            _bpTypes = new Type[] { null }.Concat(ResourcesLibrary.LibraryObject.BlueprintsByAssetId.Values
                                 .Select(bp => bp.GetType()).Distinct().OrderBy(type => type.FullName)).ToArray();
                             _bpTypeNames = _bpTypes.Select(type => type?.FullName).ToArray();
                             _bpTypeNames[0] = "None";
@@ -126,12 +123,13 @@ namespace DataViewer.Menus
                                     }
                                     else
                                     {
+                                        
                                         _bpFields = Node.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
                                         _bpProperties = Node.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
                                         _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).ToArray();
                                         _searchIndex = Array.IndexOf(_bpChildNames, "name");
 
-                                        _blueprints = _library.GetAllBlueprints().Where(item => item.GetType() == _bpTypes[_bpTypeIndex]).ToList();
+                                        _blueprints = ResourcesLibrary.LibraryObject.BlueprintsByAssetId.Values.Where(item => item.GetType() == _bpTypes[_bpTypeIndex]).ToList();
                                         _treeView.SetRoot(_blueprints);
                                     }
                                 }, _buttonStyle, GUILayout.ExpandWidth(false));
