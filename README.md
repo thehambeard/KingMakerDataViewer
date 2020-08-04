@@ -1,3 +1,5 @@
+Updated DataViewer for use in the beta, also updated it to Harmony2.0<BR>
+ 
 # Data Viewer for Pathfinder: Kingmaker
 ## Download
 https://www.nexusmods.com/pathfinderkingmaker/mods/106
