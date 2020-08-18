@@ -183,8 +183,8 @@ namespace DataViewer.Menus
             if (reset || _modIdsToColor == null)
                 _modIdsToColor = new Dictionary<string, string>();
 
-            Harmony harmonyInstance = new Harmony(_modId);
-            foreach (Patch patch in harmonyInstance.GetPatchedMethods().SelectMany(method =>
+            
+            foreach (Patch patch in Harmony.GetAllPatchedMethods().SelectMany(method =>
             {
                 Patches patches = Harmony.GetPatchInfo(method);
                 return patches.Prefixes.Concat(patches.Transpilers).Concat(patches.Postfixes);
@@ -199,7 +199,7 @@ namespace DataViewer.Menus
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
             Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
             {
                 _patches.Add(method, GetSortedPatches(harmonyInstance, method).ToList());
             }
@@ -209,7 +209,7 @@ namespace DataViewer.Menus
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
             Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
             {
                 IEnumerable<Patch> patches =
                     GetSortedPatches(harmonyInstance, method).Where(patch => patch.owner == _modId);
@@ -224,7 +224,7 @@ namespace DataViewer.Menus
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
             Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
             {
                 IEnumerable<Patch> patches = GetSortedPatches(harmonyInstance, method);
                 if (patches.Any(patch => patch.owner == _modId) && patches.Any(patch => patch.owner != _modId))
