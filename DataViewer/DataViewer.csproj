@@ -114,9 +114,12 @@
   <Import Project="..\..\KingmakerModMaker2\ModMaker\ModMaker.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>rd "$(TargetDir)DataViewer"  /s /q
-mkdir "$(TargetDir)DataViewer"
-copy "$(TargetPath)" "$(TargetDir)DataViewer" /y
-copy "$(ProjectDir)\Info.json" "$(TargetDir)DataViewer\Info.json" /y</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+  mkdir $(TargetName)
+  del $(TargetName).zip /Q
+  copy $(TargetName)$(TargetExt) .\$(TargetName)\$(TargetName)$(TargetExt) /Y
+  copy info.json .\$(TargetName)\info.json /Y
+  "C:\Program Files\7-Zip\7z.exe" u -tzip $(TargetName).zip $(TargetName)
+)</PostBuildEvent>
   </PropertyGroup>
 </Project>

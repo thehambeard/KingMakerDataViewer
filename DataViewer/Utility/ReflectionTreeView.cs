@@ -70,7 +70,7 @@ namespace DataViewer.Utility
                 {
                     if (_mouseOver)
                     {
-                        float wheel = Input.GetAxis("Mouse ScrollWheel");
+                        float wheel = Input.GetAxis("MouseAxis3");
                         if (wheel > 0 && _startIndex > 0)
                             _startIndex--;
                         else if (wheel < 0 && _startIndex < startIndexUBound)
