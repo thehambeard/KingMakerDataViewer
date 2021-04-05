@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
+using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree
 {
@@ -54,6 +55,10 @@ namespace DataViewer.Utility.ReflectionTree
         public readonly bool IsNullable;
 
         public int CustomFlags { get; set; }
+        public bool hasChildren {  get {
+                if (IsBaseType) return false;
+                return GetItemNodes().Count > 0 || GetComponentNodes().Count > 0 || GetFieldNodes().Count > 0 || GetPropertyNodes().Count > 0;
+            } }
 
         public string Name { get; protected set; }
 

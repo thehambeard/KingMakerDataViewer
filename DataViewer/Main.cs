@@ -12,7 +12,8 @@ namespace DataViewer
     {
         public static ModManager<Core, Settings> Mod;
         public static MenuManager Menu;
-
+        public static UnityModManager.ModEntry modEntry = null;
+        public static void Log(string s) { if (modEntry != null) modEntry.Logger.Log(s); }
         static bool Load(UnityModManager.ModEntry modEntry)
         {
             Mod = new ModManager<Core, Settings>();
@@ -20,6 +21,7 @@ namespace DataViewer
             modEntry.OnToggle = OnToggle;
 #if (DEBUG)
             modEntry.OnUnload = Unload;
+            Main.modEntry = modEntry;
             return true;
         }
 
@@ -36,7 +38,7 @@ namespace DataViewer
 #endif
 
         static bool OnToggle(UnityModManager.ModEntry modEntry, bool value)
-        {
+        { 
             if (value)
             {
                 Assembly assembly = Assembly.GetExecutingAssembly();

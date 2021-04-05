@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+﻿using Harmony12;
 using ModMaker;
 using System;
 using System.Collections.Generic;
@@ -28,6 +28,14 @@ namespace DataViewer.Menus
             if (Mod == null || !Mod.Enabled)
                 return;
 
+            // Color Test 
+#if false
+            var rgbaValues = Enum.GetNames(typeof(RGBA)).OrderBy(n => n).ToArray();
+            var names = rgbaValues.Select(name => $"{name}".Color((RGBA)Enum.Parse(typeof(RGBA), name)));
+            var rgbaCount = rgbaValues.Count();
+
+            GUILayout.SelectionGrid(0, names.ToArray(), 6);
+#endif
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft };
 
@@ -124,7 +132,7 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        GUILayout.Label(patch.PatchMethod.Name, _buttonStyle);
+                                        GUILayout.Label(patch.patch.Name, _buttonStyle);
                                     }
                                 }
 
@@ -148,8 +156,7 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        
-                                        GUILayout.Label(patch.PatchMethod.DeclaringType.DeclaringType?.Name, _buttonStyle);
+                                        GUILayout.Label(patch.patch.DeclaringType.DeclaringType?.Name, _buttonStyle);
                                     }
                                 }
 
@@ -157,7 +164,7 @@ namespace DataViewer.Menus
                                 {
                                     foreach (Patch patch in item.Value)
                                     {
-                                        GUILayout.Label(patch.PatchMethod.DeclaringType.Name, _buttonStyle);
+                                        GUILayout.Label(patch.patch.DeclaringType.Name, _buttonStyle);
                                     }
                                 }
 
@@ -182,24 +189,29 @@ namespace DataViewer.Menus
         {
             if (reset || _modIdsToColor == null)
                 _modIdsToColor = new Dictionary<string, string>();
-
-            
-            foreach (Patch patch in Harmony.GetAllPatchedMethods().SelectMany(method =>
+            var rgbaValues = Enum.GetValues(typeof(RGBA));
+            var rgbaCount = rgbaValues.Length;
+            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
+            foreach (Patch patch in harmonyInstance.GetPatchedMethods().SelectMany(method =>
             {
-                Patches patches = Harmony.GetPatchInfo(method);
+                Patches patches = harmonyInstance.GetPatchInfo(method);
                 return patches.Prefixes.Concat(patches.Transpilers).Concat(patches.Postfixes);
             }))
             {
-                if (!_modIdsToColor.ContainsKey(patch.owner))
-                    _modIdsToColor[patch.owner] = ColorUtility.ToHtmlStringRGBA(UnityEngine.Random.ColorHSV(0f, 1f, 0.25f, 1f, 0.75f, 1f));
+                if (!_modIdsToColor.ContainsKey(patch.owner)) {
+                    var rgbaIndex = Math.Abs(patch.owner.GetHashCode() % rgbaCount);
+                    RGBA color = (RGBA)rgbaValues.GetValue(rgbaIndex);
+                    var colorString = color.ToHtmlString();
+                    _modIdsToColor[patch.owner] = colorString;
+                }
             }
         }
 
         private void RefreshPatchInfoOfAllMods(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
+            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
+            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 _patches.Add(method, GetSortedPatches(harmonyInstance, method).ToList());
             }
@@ -208,8 +220,8 @@ namespace DataViewer.Menus
         private void RefreshPatchInfoOfSelected(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
+            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
+            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 IEnumerable<Patch> patches =
                     GetSortedPatches(harmonyInstance, method).Where(patch => patch.owner == _modId);
@@ -223,8 +235,8 @@ namespace DataViewer.Menus
         private void RefreshPatchInfoOfPotentialConflict(string modId)
         {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            Harmony harmonyInstance = new Harmony(_modId);
-            foreach (MethodBase method in Harmony.GetAllPatchedMethods())
+            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
+            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
             {
                 IEnumerable<Patch> patches = GetSortedPatches(harmonyInstance, method);
                 if (patches.Any(patch => patch.owner == _modId) && patches.Any(patch => patch.owner != _modId))
@@ -234,9 +246,9 @@ namespace DataViewer.Menus
             }
         }
 
-        private IEnumerable<Patch> GetSortedPatches(Harmony harmonyInstance, MethodBase method)
+        private IEnumerable<Patch> GetSortedPatches(HarmonyInstance harmonyInstance, MethodBase method)
         {
-            Patches patches = Harmony.GetPatchInfo(method);
+            Patches patches = harmonyInstance.GetPatchInfo(method);
             return patches.Prefixes.OrderByDescending(patch => patch.priority)
                 .Concat(patches.Transpilers.OrderByDescending(patch => patch.priority))
                 .Concat(patches.Postfixes.OrderByDescending(patch => patch.priority));

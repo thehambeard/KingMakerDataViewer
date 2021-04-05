@@ -14,6 +14,7 @@ using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
 using static ModMaker.Utility.RichTextExtensions;
+using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
 
 namespace DataViewer.Menus
 {
@@ -39,22 +40,22 @@ namespace DataViewer.Menus
                 GUILayout.Label(" * Please start or load the game first.".Color(RGBA.yellow));
                 return;
             }
-
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, wordWrap = true };
 
             try
             {
+
                 using (new GUILayout.HorizontalScope())
                 {
+
                     // character selection
                     using (new GUILayout.VerticalScope(GUILayout.ExpandWidth(false)))
                     {
                         List<UnitEntityData> companions = Game.Instance?.Player.AllCharacters
-                                .Where(c => c.IsPlayerFaction && !c.Descriptor.IsPet).ToList();
+                                .Where(c => c.IsPlayerFaction).ToList(); // && !c.Descriptor.IsPet).ToList();
 
                         int selectedCharacterIndex = companions.IndexOf(_selectedCharacter) + 1;
-
                         GUIHelper.SelectionGrid(ref selectedCharacterIndex,
                             new string[] { "None" }.Concat(companions.Select(item => item.CharacterName)).ToArray(),
                             1, () =>
@@ -62,10 +63,10 @@ namespace DataViewer.Menus
                                 if (selectedCharacterIndex > 0)
                                 {
                                     _selectedCharacter = companions[selectedCharacterIndex - 1];
+                                    modEntry.Logger.Log($"selected: {_selectedCharacter.CharacterName}");
                                     _featuresTree = new FeaturesTree(_selectedCharacter.Descriptor.Progression);
                                 }
                             }, null, GUILayout.ExpandWidth(false));
-
                         if (selectedCharacterIndex == 0 && 
                             (Event.current.type == EventType.Layout || Event.current.type == EventType.Used))
                         {
@@ -76,7 +77,7 @@ namespace DataViewer.Menus
 
                     // features tree
                     if (_featuresTree != null)
-                        using (new GUILayout.VerticalScope())
+                    using (new GUILayout.VerticalScope())
                         {
                             bool expandAll;
                             bool collapseAll;
@@ -104,22 +105,28 @@ namespace DataViewer.Menus
                             {
                                 using (new GUILayout.HorizontalScope())
                                 {
-                                    node.Expanded = node.ChildNodes.Count == 0 ||
-                                        (expandAll ? true : collapseAll ? false : node.Expanded);
-                                    GUIHelper.ToggleButton(ref node.Expanded, node.Name +
-                                        ("\n[" + node.Blueprint.name + "]").Color(node.IsMissing ? RGBA.maroon : RGBA.grey), _buttonStyle);
-                                    if (node.Expanded && node.ChildNodes.Count > 0)
-                                    {
-                                        using (new GUILayout.VerticalScope(GUILayout.ExpandWidth(false)))
-                                        {
-                                            foreach (FeaturesTree.FeatureNode child in node.ChildNodes)
-                                                draw(child);
+                                    var titleText = node.Name + ("\n[" + node.Blueprint.name + "]").Color(node.IsMissing ? RGBA.maroon : RGBA.lightblue);
+                                    node.Expanded = node.Expanded;
+                                    if (node.ChildNodes.Count > 0) {
+                                        if (node.Expanded == ToggleState.None) {
+                                            node.Expanded = ToggleState.Off;
                                         }
+                                        node.Expanded = (expandAll ? ToggleState.On : collapseAll ? ToggleState.Off : node.Expanded);
                                     }
-                                    else
-                                    {
-                                        GUILayout.FlexibleSpace();
+                                    else {
+                                        node.Expanded = ToggleState.None;
                                     }
+                                    Main.Log($"{node.Expanded} {titleText}");
+                                    GUIHelper.ToggleButton(ref node.Expanded, titleText, _buttonStyle);
+                                        if (node.Expanded.IsOn()) {
+                                            using (new GUILayout.VerticalScope(GUILayout.ExpandWidth(false))) {
+                                                foreach (FeaturesTree.FeatureNode child in node.ChildNodes)
+                                                    draw(child);
+                                            }
+                                        }
+                                        else {
+                                            GUILayout.FlexibleSpace();
+                                        }
                                 }
                             }
                         }
@@ -143,13 +150,20 @@ namespace DataViewer.Menus
                 Dictionary<BlueprintScriptableObject, FeatureNode> normalNodes = new Dictionary<BlueprintScriptableObject, FeatureNode>();
                 List<FeatureNode> parametrizedNodes = new List<FeatureNode>();
 
+                //Main.Log($"prog: {progression}");
                 // get nodes (features / race)
                 foreach (Feature feature in progression.Features.Enumerable)
                 {
+                    var name = feature.Name;
+                    if (name == null || name.Length == 0)
+                        name = feature.Blueprint.name;
+                    //Main.Log($"feature: {name}");
+                    var source = feature.m_Source;
+                    //Main.Log($"source: {source}");
                     if (feature.Blueprint is BlueprintParametrizedFeature)
-                        parametrizedNodes.Add(new FeatureNode(feature.Name, feature.Blueprint, feature.Source));
+                        parametrizedNodes.Add(new FeatureNode(name, feature.Blueprint, source));
                     else
-                        normalNodes.Add(feature.Blueprint, new FeatureNode(feature.Name, feature.Blueprint, feature.Source));
+                        normalNodes.Add(feature.Blueprint, new FeatureNode(name, feature.Blueprint, source));
                 }
 
                 // get nodes (classes)
@@ -219,7 +233,7 @@ namespace DataViewer.Menus
                 public readonly BlueprintScriptableObject Blueprint;
                 public readonly List<FeatureNode> ChildNodes = new List<FeatureNode>();
 
-                public bool Expanded;
+                public ToggleState Expanded;
 
                 internal FeatureNode(string name, BlueprintScriptableObject blueprint, BlueprintScriptableObject source)
                 {

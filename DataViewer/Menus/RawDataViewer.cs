@@ -22,7 +22,7 @@ namespace DataViewer.Menus
             { "Dialog", () => Game.Instance?.DialogController },
             { "Vendor", () => Game.Instance?.Vendor },
             { "Scene", () => SceneManager.GetActiveScene() },
-            { "Area", () => Game.Instance?.CurrentScene },
+            { "Area", () => Game.Instance?.CurrentlyLoadedArea },
             { "UI", () => Game.Instance?.UI },
             { "Static Canvas", () => Game.Instance?.UI?.Canvas?.gameObject },
             { "Global Map", () => Game.Instance?.Player?.GlobalMap },

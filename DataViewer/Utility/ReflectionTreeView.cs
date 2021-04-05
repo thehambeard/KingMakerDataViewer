@@ -3,16 +3,12 @@ using ModMaker.Utility;
 using System;
 using UnityEngine;
 using static ModMaker.Utility.RichTextExtensions;
+using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
 
 namespace DataViewer.Utility
 {
     public class ReflectionTreeView
     {
-        private enum CustomFlags : int
-        {
-            expanded = 0x00000001
-        }
-
         private Tree _tree;
 
         private float _height;
@@ -50,7 +46,7 @@ namespace DataViewer.Utility
             else
                 _tree = new Tree(root);
 
-            _tree.RootNode.CustomFlags |= (int)CustomFlags.expanded;
+            _tree.RootNode.CustomFlags = (int)ToggleState.On;
         }
 
         public void OnGUI(bool drawRoot = true, bool collapse = false)
@@ -70,7 +66,7 @@ namespace DataViewer.Utility
                 {
                     if (_mouseOver)
                     {
-                        float wheel = Input.GetAxis("MouseAxis3");
+                        float wheel = Input.GetAxis("Mouse ScrollWheel");
                         if (wheel > 0 && _startIndex > 0)
                             _startIndex--;
                         else if (wheel < 0 && _startIndex < startIndexUBound)
@@ -154,7 +150,7 @@ namespace DataViewer.Utility
 
         private void DrawNode(Node node, int depth, bool collapse)
         {
-            bool expanded = (node.CustomFlags & (int)CustomFlags.expanded) != 0;
+            ToggleState expanded = (ToggleState)node.CustomFlags;
 
             if (depth >= _skipLevels && !(collapse && depth > 0))
             {
@@ -164,18 +160,27 @@ namespace DataViewer.Utility
                 {
                     using (new GUILayout.HorizontalScope())
                     {
-                        // title
-                        GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        GUIHelper.ToggleButton(ref expanded, 
+                        if (!node.hasChildren) {
+                            expanded = ToggleState.None;
+                        }
+                        else if (node.CustomFlags == (int)ToggleState.None) {
+                            expanded = ToggleState.Off;
+                        }
+                    node.CustomFlags = (int)expanded;
+
+                    // title
+                    GUILayout.Space(DepthDelta * (depth - _skipLevels));
+                        GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
                             node.Name + " : " + node.Type.Name.Color(
                                 node.IsBaseType ? RGBA.grey :
-                                node.IsGameObject ? RGBA.magenta : 
+                                node.IsGameObject ? RGBA.magenta :
                                 node.IsEnumerable ? RGBA.cyan : RGBA.orange),
-                            () => node.CustomFlags |= (int)CustomFlags.expanded,
-                            () => node.CustomFlags &= ~(int)CustomFlags.expanded,
+                            () => node.CustomFlags = (int)ToggleState.On,
+                            () => node.CustomFlags = (int)ToggleState.Off,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
-
+                        ;
+                        
                         // value
                         Color originalColor = GUI.contentColor;
                         GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
@@ -190,10 +195,10 @@ namespace DataViewer.Utility
             }
 
             if (collapse)
-                node.CustomFlags &= ~(int)CustomFlags.expanded;
+                node.CustomFlags = (int)ToggleState.Off;
 
             // children
-            if (expanded)
+            if (expanded.IsOn())
                 DrawChildren(node, depth + 1, collapse);
 
             string GetPrefix(NodeType nodeType)
@@ -216,9 +221,9 @@ namespace DataViewer.Utility
 
         private void DrawChildren(Node node, int depth, bool collapse)
         {
-            if (node.IsBaseType)
+            if (node.IsBaseType) 
                 return;
-
+    
             foreach (Node child in node.GetItemNodes())
             {
                 DrawNode(child, depth, collapse);
