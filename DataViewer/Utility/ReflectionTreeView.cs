@@ -234,15 +234,15 @@ namespace DataViewer.Utility
                 DrawNode(child, depth, collapse);
             }
 
+            foreach (Node child in node.GetPropertyNodes()) {
+                DrawNode(child, depth, collapse);
+            }
+
             foreach (Node child in node.GetFieldNodes())
             {
                 DrawNode(child, depth, collapse);
             }
 
-            foreach (Node child in node.GetPropertyNodes())
-            {
-                DrawNode(child, depth, collapse);
-            }
         }
     }
 }
