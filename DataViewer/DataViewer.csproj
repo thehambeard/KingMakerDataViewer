@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\DataViewer\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -28,7 +28,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release\DataViewer\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -90,7 +90,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Info.json" />
+    <None Include="Info.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Repository.json" />
   </ItemGroup>
   <ItemGroup>
@@ -100,9 +102,9 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>rd "$(TargetDir)DataViewer"  /s /q
-mkdir "$(TargetDir)DataViewer"
-copy "$(TargetPath)" "$(TargetDir)DataViewer" /y
-copy "$(ProjectDir)\Info.json" "$(TargetDir)DataViewer\Info.json" /y
+#mkdir "$(TargetDir)DataViewer"
+#copy "$(TargetPath)" "$(TargetDir)DataViewer" /y
+#copy "$(ProjectDir)\Info.json" "$(TargetDir)DataViewer\Info.json" /y
 copy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure Demo\Mods\$(ProjectName)\$(ProjectName).dll"
 copy /Y "$(TargetDir)$(TargetName).pdb" "C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure Demo\Mods\$(ProjectName)\$(ProjectName).pdb"
 
