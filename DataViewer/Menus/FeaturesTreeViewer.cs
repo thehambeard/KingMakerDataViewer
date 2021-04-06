@@ -106,7 +106,6 @@ namespace DataViewer.Menus
                                 using (new GUILayout.HorizontalScope())
                                 {
                                     var titleText = node.Name + ("\n[" + node.Blueprint.name + "]").Color(node.IsMissing ? RGBA.maroon : RGBA.lightblue);
-                                    node.Expanded = node.Expanded;
                                     if (node.ChildNodes.Count > 0) {
                                         if (node.Expanded == ToggleState.None) {
                                             node.Expanded = ToggleState.Off;

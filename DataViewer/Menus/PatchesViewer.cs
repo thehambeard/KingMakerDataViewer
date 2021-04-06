@@ -1,4 +1,4 @@
-﻿using Harmony12;
+﻿using HarmonyLib;
 using ModMaker;
 using System;
 using System.Collections.Generic;
@@ -9,10 +9,19 @@ using UnityModManagerNet;
 using static DataViewer.Main;
 using static ModMaker.Utility.RichTextExtensions;
 
-namespace DataViewer.Menus
-{
-    public class PatchesViewer : IMenuSelectablePage
-    {
+using HarmonyLib;
+using ModMaker;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+using UnityModManagerNet;
+using static DataViewer.Main;
+using static ModMaker.Utility.RichTextExtensions;
+
+namespace DataViewer.Menus {
+    public class PatchesViewer : IMenuSelectablePage {
         private Dictionary<string, string> _modIdsToColor;
         private string _modId;
         private static Dictionary<MethodBase, List<Patch>> _patches = null;
@@ -23,36 +32,22 @@ namespace DataViewer.Menus
 
         public int Priority => 900;
 
-        public void OnGUI(UnityModManager.ModEntry modEntry)
-        {
+        public void OnGUI(UnityModManager.ModEntry modEntry) {
             if (Mod == null || !Mod.Enabled)
                 return;
 
-            // Color Test 
-#if false
-            var rgbaValues = Enum.GetNames(typeof(RGBA)).OrderBy(n => n).ToArray();
-            var names = rgbaValues.Select(name => $"{name}".Color((RGBA)Enum.Parse(typeof(RGBA), name)));
-            var rgbaCount = rgbaValues.Count();
-
-            GUILayout.SelectionGrid(0, names.ToArray(), 6);
-#endif
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft };
 
-            try
-            {
-                using (new GUILayout.HorizontalScope())
-                {
+            try {
+                using (new GUILayout.HorizontalScope()) {
                     // modId <=> color
-                    using (new GUILayout.VerticalScope())
-                    {
-                        if (GUILayout.Button("Refresh List Of Patch Owners", _buttonStyle))
-                        {
+                    using (new GUILayout.VerticalScope()) {
+                        if (GUILayout.Button("Refresh List Of Patch Owners", _buttonStyle)) {
                             RefreshListOfPatchOwners(modEntry.Info.Id);
                         }
 
-                        if (GUILayout.Button("Clear List Of Patch Owners", _buttonStyle))
-                        {
+                        if (GUILayout.Button("Clear List Of Patch Owners", _buttonStyle)) {
                             _patches = null;
                             _modId = null;
                             _modIdsToColor = null;
@@ -60,20 +55,15 @@ namespace DataViewer.Menus
                     }
 
                     // mod selection
-                    if (_modIdsToColor != null)
-                    {
-                        using (new GUILayout.VerticalScope())
-                        {
-                            if (GUILayout.Button("None", _buttonStyle))
-                            {
+                    if (_modIdsToColor != null) {
+                        using (new GUILayout.VerticalScope()) {
+                            if (GUILayout.Button("None", _buttonStyle)) {
                                 _patches = null;
                                 _modId = null;
                             }
 
-                            foreach (KeyValuePair<string, string> pair in _modIdsToColor)
-                            {
-                                if (GUILayout.Button(pair.Key.Color(pair.Value), _buttonStyle))
-                                {
+                            foreach (KeyValuePair<string, string> pair in _modIdsToColor) {
+                                if (GUILayout.Button(pair.Key.Color(pair.Value), _buttonStyle)) {
                                     _patches = null;
                                     _modId = pair.Key;
                                 }
@@ -85,86 +75,68 @@ namespace DataViewer.Menus
                 }
 
                 // info selection
-                if(_modIdsToColor != null && !string.IsNullOrEmpty(_modId))
-                {
+                if (_modIdsToColor != null && !string.IsNullOrEmpty(_modId)) {
                     GUILayout.Space(10f);
 
                     GUILayout.Label("Selected Patch Owner: " + _modId.Color(_modIdsToColor[_modId]));
 
                     GUILayout.Space(10f);
 
-                    if (GUILayout.Button("Refresh Patch Info (All Mods)", _buttonStyle))
-                    {
+                    if (GUILayout.Button("Refresh Patch Info (All Mods)", _buttonStyle)) {
                         RefreshPatchInfoOfAllMods(_modId);
                     }
 
-                    if (GUILayout.Button("Refresh Patch Info (Selected)", _buttonStyle))
-                    {
+                    if (GUILayout.Button("Refresh Patch Info (Selected)", _buttonStyle)) {
                         RefreshPatchInfoOfSelected(_modId);
                     }
 
-                    if (GUILayout.Button("Refresh Patch Info (Potential Conflict With ...)", _buttonStyle))
-                    {
+                    if (GUILayout.Button("Refresh Patch Info (Potential Conflict With ...)", _buttonStyle)) {
                         RefreshPatchInfoOfPotentialConflict(_modId);
                     }
                 }
 
                 // display info
-                if (_modIdsToColor != null && !string.IsNullOrEmpty(_modId) && _patches != null)
-                {
-                    if (GUILayout.Button("Clear Patch Info", _buttonStyle))
-                    {
+                if (_modIdsToColor != null && !string.IsNullOrEmpty(_modId) && _patches != null) {
+                    if (GUILayout.Button("Clear Patch Info", _buttonStyle)) {
                         _patches = null;
                         return;
                     }
 
-                    foreach (KeyValuePair<MethodBase, List<Patch>> item in _patches)
-                    {
+                    foreach (KeyValuePair<MethodBase, List<Patch>> item in _patches) {
                         GUILayout.Space(10f);
 
-                        using (new GUILayout.VerticalScope())
-                        {
+                        using (new GUILayout.VerticalScope()) {
                             GUILayout.Label(item.Key.DeclaringType.FullName + "." + item.Key.ToString(), _buttonStyle);
 
-                            using (new GUILayout.HorizontalScope())
-                            {
-                                using (new GUILayout.VerticalScope())
-                                {
-                                    foreach (Patch patch in item.Value)
-                                    {
-                                        GUILayout.Label(patch.patch.Name, _buttonStyle);
+                            using (new GUILayout.HorizontalScope()) {
+                                using (new GUILayout.VerticalScope()) {
+                                    foreach (Patch patch in item.Value) {
+                                        GUILayout.Label(patch.PatchMethod.Name, _buttonStyle);
                                     }
                                 }
 
-                                using (new GUILayout.VerticalScope())
-                                {
-                                    foreach (Patch patch in item.Value)
-                                    {
+                                using (new GUILayout.VerticalScope()) {
+                                    foreach (Patch patch in item.Value) {
                                         GUILayout.Label(patch.owner.Color(_modIdsToColor[patch.owner]), _buttonStyle);
                                     }
                                 }
 
-                                using (new GUILayout.VerticalScope())
-                                {
-                                    foreach (Patch patch in item.Value)
-                                    {
+                                using (new GUILayout.VerticalScope()) {
+                                    foreach (Patch patch in item.Value) {
                                         GUILayout.Label(patch.priority.ToString(), _buttonStyle);
                                     }
                                 }
 
-                                using (new GUILayout.VerticalScope())
-                                {
-                                    foreach (Patch patch in item.Value)
-                                    {
-                                        GUILayout.Label(patch.patch.DeclaringType.DeclaringType?.Name, _buttonStyle);
+                                using (new GUILayout.VerticalScope()) {
+                                    foreach (Patch patch in item.Value) {
+
+                                        GUILayout.Label(patch.PatchMethod.DeclaringType.DeclaringType?.Name, _buttonStyle);
                                     }
                                 }
 
-                                using (new GUILayout.VerticalScope())
-                                {
-                                    foreach (Patch patch in item.Value)
-                                    {
-                                        GUILayout.Label(patch.patch.DeclaringType.Name, _buttonStyle);
+                                using (new GUILayout.VerticalScope()) {
+                                    foreach (Patch patch in item.Value) {
+                                        GUILayout.Label(patch.PatchMethod.DeclaringType.Name, _buttonStyle);
                                     }
                                 }
 
@@ -174,8 +146,7 @@ namespace DataViewer.Menus
                     }
                 }
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 _patches = null;
                 _modId = null;
                 _modIdsToColor = null;
@@ -185,70 +156,61 @@ namespace DataViewer.Menus
 
         }
 
-        private void RefreshListOfPatchOwners(string modId, bool reset = true)
-        {
+        private void RefreshListOfPatchOwners(string modId, bool reset = true) {
             if (reset || _modIdsToColor == null)
                 _modIdsToColor = new Dictionary<string, string>();
+
             var rgbaValues = Enum.GetValues(typeof(RGBA));
             var rgbaCount = rgbaValues.Length;
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
-            foreach (Patch patch in harmonyInstance.GetPatchedMethods().SelectMany(method =>
-            {
-                Patches patches = harmonyInstance.GetPatchInfo(method);
+
+            foreach (Patch patch in Harmony.GetAllPatchedMethods().SelectMany(method => {
+                Patches patches = Harmony.GetPatchInfo(method);
                 return patches.Prefixes.Concat(patches.Transpilers).Concat(patches.Postfixes);
-            }))
-            {
+            })) {
                 if (!_modIdsToColor.ContainsKey(patch.owner)) {
                     var rgbaIndex = Math.Abs(patch.owner.GetHashCode() % rgbaCount);
                     RGBA color = (RGBA)rgbaValues.GetValue(rgbaIndex);
                     var colorString = color.ToHtmlString();
                     _modIdsToColor[patch.owner] = colorString;
+
+                    //_modIdsToColor[patch.owner] = ColorUtility.ToHtmlStringRGBA(UnityEngine.Random.ColorHSV(0f, 1f, 0.25f, 1f, 0.75f, 1f));
                 }
             }
         }
 
-        private void RefreshPatchInfoOfAllMods(string modId)
-        {
+        private void RefreshPatchInfoOfAllMods(string modId) {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
-            {
+            Harmony harmonyInstance = new Harmony(_modId);
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
                 _patches.Add(method, GetSortedPatches(harmonyInstance, method).ToList());
             }
         }
 
-        private void RefreshPatchInfoOfSelected(string modId)
-        {
+        private void RefreshPatchInfoOfSelected(string modId) {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
-            {
+            Harmony harmonyInstance = new Harmony(_modId);
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
                 IEnumerable<Patch> patches =
                     GetSortedPatches(harmonyInstance, method).Where(patch => patch.owner == _modId);
-                if (patches.Any())
-                {
+                if (patches.Any()) {
                     _patches.Add(method, patches.ToList());
                 }
             }
         }
 
-        private void RefreshPatchInfoOfPotentialConflict(string modId)
-        {
+        private void RefreshPatchInfoOfPotentialConflict(string modId) {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            HarmonyInstance harmonyInstance = HarmonyInstance.Create(_modId);
-            foreach (MethodBase method in harmonyInstance.GetPatchedMethods())
-            {
+            Harmony harmonyInstance = new Harmony(_modId);
+            foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
                 IEnumerable<Patch> patches = GetSortedPatches(harmonyInstance, method);
-                if (patches.Any(patch => patch.owner == _modId) && patches.Any(patch => patch.owner != _modId))
-                {
+                if (patches.Any(patch => patch.owner == _modId) && patches.Any(patch => patch.owner != _modId)) {
                     _patches.Add(method, patches.ToList());
                 }
             }
         }
 
-        private IEnumerable<Patch> GetSortedPatches(HarmonyInstance harmonyInstance, MethodBase method)
-        {
-            Patches patches = harmonyInstance.GetPatchInfo(method);
+        private IEnumerable<Patch> GetSortedPatches(Harmony harmonyInstance, MethodBase method) {
+            Patches patches = Harmony.GetPatchInfo(method);
             return patches.Prefixes.OrderByDescending(patch => patch.priority)
                 .Concat(patches.Transpilers.OrderByDescending(patch => patch.priority))
                 .Concat(patches.Postfixes.OrderByDescending(patch => patch.priority));

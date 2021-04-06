@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityModManagerNet;
 using UnityEngine.UI;
-using Harmony12;
+using HarmonyLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
