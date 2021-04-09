@@ -35,13 +35,22 @@ namespace DataViewer.Menus
 
         private readonly string[] _targetNames = TARGET_LIST.Keys.ToArray();
 
-        private ReflectionTreeView _treeView = new ReflectionTreeView();
-        private int _targetIndex;
-
+        private ReflectionTreeView _treeView = null;
+       
         public string Name => "Raw Data";
 
         public int Priority => 0;
+        void ResetTree() {
+            if (_treeView == null)
+                _treeView = new ReflectionTreeView();
 
+            Func<object> getTarget = TARGET_LIST[_targetNames[Main.settings.selectedRawDataType]];
+            if (getTarget == null)
+                _treeView.Clear();
+            else
+                _treeView.SetRoot(getTarget());
+        }
+        bool firstTime = true;
         public void OnGUI(UnityModManager.ModEntry modEntry)
         {
             if (Mod == null || !Mod.Enabled)
@@ -49,18 +58,16 @@ namespace DataViewer.Menus
 
             try
             {
+                if (_treeView == null)
+                    ResetTree();
+
                 // target selection
-                GUIHelper.SelectionGrid(ref _targetIndex, _targetNames, 5, () =>
-                {
-                    Func<object> getTarget = TARGET_LIST[_targetNames[_targetIndex]];
-                    if (getTarget == null)
-                        _treeView.Clear();
-                    else
-                        _treeView.SetRoot(getTarget());
+                GUIHelper.SelectionGrid(ref Main.settings.selectedRawDataType, _targetNames, 5, () => {
+                    ResetTree();
                 });
 
                 // tree view
-                if (_targetIndex != 0)
+                if (Main.settings.selectedRawDataType != 0)
                 {
                     GUILayout.Space(10f);
 
@@ -69,7 +76,7 @@ namespace DataViewer.Menus
             }
             catch (Exception e)
             {
-                _targetIndex = 0;
+                Main.settings.selectedRawDataType = 0;
                 _treeView.Clear();
                 modEntry.Logger.Error(e.StackTrace);
                 throw e;

@@ -11,6 +11,8 @@ namespace DataViewer
     static class Main
     {
         public static ModManager<Core, Settings> Mod;
+        public static Settings settings { get { return Mod.Settings; } }
+
         public static MenuManager Menu;
         public static UnityModManager.ModEntry modEntry = null;
         public static void Log(string s) { if (modEntry != null) modEntry.Logger.Log(s); }

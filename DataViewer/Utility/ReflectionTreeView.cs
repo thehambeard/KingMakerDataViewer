@@ -1,15 +1,16 @@
 ﻿using DataViewer.Utility.ReflectionTree;
 using ModMaker.Utility;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
 
-namespace DataViewer.Utility
-{
-    public class ReflectionTreeView
-    {
+namespace DataViewer.Utility {
+    public class ReflectionTreeView {
         private Tree _tree;
+        private Tree _filteredTree;
 
         private float _height;
         private bool _mouseOver;
@@ -18,6 +19,7 @@ namespace DataViewer.Utility
         private int _nodesCount;
         private int _startIndex;
         private int _skipLevels;
+        private String searchText = "";
 
         public float DepthDelta { get; set; } = 30f;
 
@@ -29,18 +31,15 @@ namespace DataViewer.Utility
 
         public ReflectionTreeView() { }
 
-        public ReflectionTreeView(object root)
-        {
+        public ReflectionTreeView(object root) {
             SetRoot(root);
         }
 
-        public void Clear()
-        {
+        public void Clear() {
             _tree = null;
         }
 
-        public void SetRoot(object root)
-        {
+        public void SetRoot(object root) {
             if (_tree != null)
                 _tree.SetRoot(root);
             else
@@ -49,8 +48,7 @@ namespace DataViewer.Utility
             _tree.RootNode.CustomFlags = (int)ToggleState.On;
         }
 
-        public void OnGUI(bool drawRoot = true, bool collapse = false)
-        {
+        public void OnGUI(bool drawRoot = true, bool collapse = false) {
             if (_tree == null)
                 return;
 
@@ -60,36 +58,28 @@ namespace DataViewer.Utility
             int startIndexUBound = Math.Max(0, _nodesCount - MaxRows);
 
             // mouse wheel & fix scroll position
-            if (Event.current.type == EventType.Layout)
-            {
-                if (startIndexUBound > 0)
-                {
-                    if (_mouseOver)
-                    {
+            if (Event.current.type == EventType.Layout) {
+                if (startIndexUBound > 0) {
+                    if (_mouseOver) {
                         float wheel = Input.GetAxis("Mouse ScrollWheel");
                         if (wheel > 0 && _startIndex > 0)
                             _startIndex--;
                         else if (wheel < 0 && _startIndex < startIndexUBound)
                             _startIndex++;
                     }
-                    if (_startIndex > startIndexUBound)
-                    {
+                    if (_startIndex > startIndexUBound) {
                         _startIndex = startIndexUBound;
                     }
                 }
-                else
-                {
+                else {
                     _startIndex = 0;
                 }
             }
 
-            using (new GUILayout.VerticalScope())
-            {
+            using (new GUILayout.VerticalScope()) {
                 // toolbar
-                using (new GUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Collapse", GUILayout.ExpandWidth(false)))
-                    {
+                using (new GUILayout.HorizontalScope()) {
+                    if (GUILayout.Button("Collapse", GUILayout.ExpandWidth(false))) {
                         collapse = true;
                         _skipLevels = 0;
                     }
@@ -112,19 +102,19 @@ namespace DataViewer.Utility
 
                     GUILayout.Space(10f);
 
-                    GUILayout.Label($"Scroll Position: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
+                    GUILayout.Label($"Scroll Pos: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
 
+                    GUILayout.Space(10f);
+                    GUILayout.Label("Search", GUILayout.ExpandWidth(false));
+                    GUIHelper.TextField(ref searchText, null);
                     //GUILayout.FlexibleSpace();
                 }
 
                 // view
-                using (new GUILayout.ScrollViewScope(new Vector2(), GUIStyle.none, GUIStyle.none, GUILayout.Height(_height)))
-                {
-                    using (new GUILayout.HorizontalScope(GUI.skin.box))
-                    {
+                using (new GUILayout.ScrollViewScope(new Vector2(), GUIStyle.none, GUIStyle.none, GUILayout.Height(_height))) {
+                    using (new GUILayout.HorizontalScope(GUI.skin.box)) {
                         // nodes
-                        using (new GUILayout.VerticalScope())
-                        {
+                        using (new GUILayout.VerticalScope()) {
                             _nodesCount = 0;
                             if (drawRoot)
                                 DrawNode(_tree.RootNode, 0, collapse);
@@ -138,8 +128,7 @@ namespace DataViewer.Utility
                     }
 
                     // cache height
-                    if (Event.current.type == EventType.Repaint)
-                    {
+                    if (Event.current.type == EventType.Repaint) {
                         Rect lastRect = GUILayoutUtility.GetLastRect();
                         _height = lastRect.height + 5f;
                         _mouseOver = lastRect.Contains(Event.current.mousePosition);
@@ -148,31 +137,30 @@ namespace DataViewer.Utility
             }
         }
 
-        private void DrawNode(Node node, int depth, bool collapse)
-        {
+        private void DrawNode(Node node, int depth, bool collapse) {
             ToggleState expanded = (ToggleState)node.CustomFlags;
 
-            if (depth >= _skipLevels && !(collapse && depth > 0))
-            {
+            if (depth >= _skipLevels && !(collapse && depth > 0)) {
                 _nodesCount++;
 
-                if (_nodesCount > _startIndex && _nodesCount <= _startIndex + MaxRows)
-                {
-                    using (new GUILayout.HorizontalScope())
-                    {
+                if (_nodesCount > _startIndex && _nodesCount <= _startIndex + MaxRows) {
+                    using (new GUILayout.HorizontalScope()) {
                         if (!node.hasChildren) {
                             expanded = ToggleState.None;
                         }
                         else if (node.CustomFlags == (int)ToggleState.None) {
                             expanded = ToggleState.Off;
                         }
-                    node.CustomFlags = (int)expanded;
+                        node.CustomFlags = (int)expanded;
 
-                    // title
-                    GUILayout.Space(DepthDelta * (depth - _skipLevels));
+                        // title
+                        GUILayout.Space(DepthDelta * (depth - _skipLevels));
+                        var name = node.Name;
+                        if (name.ToLower().Contains(searchText.ToLower()))
+                            name = name.Bold();
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
-                            node.Name + " : " + node.Type.Name.Color(
+                            name + " : " + node.Type.Name.Color(
                                 node.IsBaseType ? RGBA.grey :
                                 node.IsGameObject ? RGBA.magenta :
                                 node.IsEnumerable ? RGBA.cyan : RGBA.orange),
@@ -180,7 +168,7 @@ namespace DataViewer.Utility
                             () => node.CustomFlags = (int)ToggleState.Off,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
                         ;
-                        
+
                         // value
                         Color originalColor = GUI.contentColor;
                         GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
@@ -201,10 +189,8 @@ namespace DataViewer.Utility
             if (expanded.IsOn())
                 DrawChildren(node, depth + 1, collapse);
 
-            string GetPrefix(NodeType nodeType)
-            {
-                switch (nodeType)
-                {
+            string GetPrefix(NodeType nodeType) {
+                switch (nodeType) {
                     case NodeType.Component:
                         return "[c] ";
                     case NodeType.Item:
@@ -219,27 +205,40 @@ namespace DataViewer.Utility
             }
         }
 
-        private void DrawChildren(Node node, int depth, bool collapse)
-        {
-            if (node.IsBaseType) 
+        private void DrawChildren(Node node, int depth, bool collapse) {
+            if (node.IsBaseType)
                 return;
-    
-            foreach (Node child in node.GetItemNodes())
-            {
-                DrawNode(child, depth, collapse);
-            }
 
-            foreach (Node child in node.GetComponentNodes())
-            {
-                DrawNode(child, depth, collapse);
+            var matches = new List<Node> { };
+            var remaining = new List<Node> { };
+            foreach (Node child in node.GetItemNodes()) {
+                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                    matches.Add(child);
+                else
+                    remaining.Add(child);
             }
-
+            foreach (Node child in node.GetComponentNodes()) {
+                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                    matches.Add(child);
+                else
+                    remaining.Add(child);
+            }
             foreach (Node child in node.GetPropertyNodes()) {
+                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                    matches.Add(child);
+                else
+                    remaining.Add(child);
+            }
+            foreach (Node child in node.GetFieldNodes()) {
+                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                    matches.Add(child);
+                else
+                    remaining.Add(child);
+            }
+            foreach (Node child in matches) {
                 DrawNode(child, depth, collapse);
             }
-
-            foreach (Node child in node.GetFieldNodes())
-            {
+            foreach (Node child in remaining) {
                 DrawNode(child, depth, collapse);
             }
 
