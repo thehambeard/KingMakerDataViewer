@@ -22,6 +22,7 @@ namespace DataViewer.Utility {
         private int _startIndex;
         private int _skipLevels;
         private String searchText = "";
+        private String searchTextLower = "";
 
         private Rect _viewerRect;
         public float DepthDelta { get; set; } = 30f;
@@ -111,6 +112,7 @@ namespace DataViewer.Utility {
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, null);
+                    searchTextLower = searchText.ToLower();
                     //GUILayout.FlexibleSpace();
                 }
                 // view
@@ -163,7 +165,7 @@ namespace DataViewer.Utility {
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
                         var name = node.Name;
-                        if (name.ToLower().Contains(searchText.ToLower()))
+                        if (name.ToLower().Contains(searchTextLower))
                             name = name.Bold();
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
@@ -219,25 +221,25 @@ namespace DataViewer.Utility {
             var matches = new List<Node> { };
             var remaining = new List<Node> { };
             foreach (Node child in node.GetItemNodes()) {
-                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
                     matches.Add(child);
                 else
                     remaining.Add(child);
             }
             foreach (Node child in node.GetComponentNodes()) {
-                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
                     matches.Add(child);
                 else
                     remaining.Add(child);
             }
             foreach (Node child in node.GetPropertyNodes()) {
-                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
                     matches.Add(child);
                 else
                     remaining.Add(child);
             }
             foreach (Node child in node.GetFieldNodes()) {
-                if (child.Name.ToLower().Contains(searchText.ToLower()))
+                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
                     matches.Add(child);
                 else
                     remaining.Add(child);

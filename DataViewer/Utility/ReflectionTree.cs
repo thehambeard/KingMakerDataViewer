@@ -59,7 +59,6 @@ namespace DataViewer.Utility.ReflectionTree
                 if (IsBaseType) return false;
                 return GetItemNodes().Count > 0 || GetComponentNodes().Count > 0 || GetFieldNodes().Count > 0 || GetPropertyNodes().Count > 0;
             } }
-
         public string Name { get; protected set; }
 
         public abstract string ValueText { get; }
