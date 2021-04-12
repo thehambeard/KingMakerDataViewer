@@ -21,6 +21,7 @@ namespace DataViewer.Utility {
         private int _skipLevels;
         private String searchText = "";
 
+        private Rect _viewerRect;
         public float DepthDelta { get; set; } = 30f;
 
         public int MaxRows { get; set; } = 20;
@@ -47,11 +48,10 @@ namespace DataViewer.Utility {
 
             _tree.RootNode.CustomFlags = (int)ToggleState.On;
         }
-
+       
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
             if (_tree == null)
                 return;
-
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
 
@@ -61,10 +61,10 @@ namespace DataViewer.Utility {
             if (Event.current.type == EventType.Layout) {
                 if (startIndexUBound > 0) {
                     if (_mouseOver) {
-                        float wheel = Input.GetAxis("Mouse ScrollWheel");
-                        if (wheel > 0 && _startIndex > 0)
+                        var delta = Input.mouseScrollDelta;
+                        if (delta.y > 0 && _startIndex > 0)
                             _startIndex--;
-                        else if (wheel < 0 && _startIndex < startIndexUBound)
+                        else if (delta.y < 0 && _startIndex < startIndexUBound)
                             _startIndex++;
                     }
                     if (_startIndex > startIndexUBound) {
@@ -75,9 +75,9 @@ namespace DataViewer.Utility {
                     _startIndex = 0;
                 }
             }
-
             using (new GUILayout.VerticalScope()) {
                 // toolbar
+                Main.Log("    2a");
                 using (new GUILayout.HorizontalScope()) {
                     if (GUILayout.Button("Collapse", GUILayout.ExpandWidth(false))) {
                         collapse = true;
@@ -109,29 +109,32 @@ namespace DataViewer.Utility {
                     GUIHelper.TextField(ref searchText, null);
                     //GUILayout.FlexibleSpace();
                 }
-
                 // view
-                using (new GUILayout.ScrollViewScope(new Vector2(), GUIStyle.none, GUIStyle.none, GUILayout.Height(_height))) {
-                    using (new GUILayout.HorizontalScope(GUI.skin.box)) {
-                        // nodes
-                        using (new GUILayout.VerticalScope()) {
-                            _nodesCount = 0;
-                            if (drawRoot)
-                                DrawNode(_tree.RootNode, 0, collapse);
-                            else
-                                DrawChildren(_tree.RootNode, 0, collapse);
+                using (new GUILayout.VerticalScope()) {
+                    using (new GUILayout.ScrollViewScope(new Vector2(), GUIStyle.none, GUIStyle.none, GUILayout.Height(_height))) {
+                        using (new GUILayout.HorizontalScope(GUI.skin.box)) {
+                            // nodes
+                            using (new GUILayout.VerticalScope()) {
+                                _nodesCount = 0;
+                                if (drawRoot)
+                                    DrawNode(_tree.RootNode, 0, collapse);
+                                else
+                                    DrawChildren(_tree.RootNode, 0, collapse);
+                            }
+
+                            // scrollbar
+//                            if (startIndexUBound > 0)
+                                _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, _nodesCount, GUILayout.ExpandHeight(true));
                         }
 
-                        // scrollbar
-                        if (startIndexUBound > 0)
-                            _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, _nodesCount, GUILayout.ExpandHeight(true));
-                    }
-
-                    // cache height
-                    if (Event.current.type == EventType.Repaint) {
-                        Rect lastRect = GUILayoutUtility.GetLastRect();
-                        _height = lastRect.height + 5f;
-                        _mouseOver = lastRect.Contains(Event.current.mousePosition);
+                        // cache height
+                        if (Event.current.type == EventType.Repaint) {
+                            var mousePos = Event.current.mousePosition;
+                            _mouseOver = _viewerRect.Contains(Event.current.mousePosition);
+                            //Main.Log($"mousePos: {mousePos} rect: {_viewerRect} --> {_mouseOver}");
+                            _viewerRect = GUILayoutUtility.GetLastRect();
+                            _height = _viewerRect.height + 5f;
+                        }
                     }
                 }
             }

@@ -50,7 +50,6 @@ namespace DataViewer.Menus
             else
                 _treeView.SetRoot(getTarget());
         }
-        bool firstTime = true;
         public void OnGUI(UnityModManager.ModEntry modEntry)
         {
             if (Mod == null || !Mod.Enabled)
