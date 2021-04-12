@@ -46,6 +46,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="HarmonyPatches.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Menus\BlueprintLoader.cs" />
     <Compile Include="Menus\BlueprintViewer.cs" />

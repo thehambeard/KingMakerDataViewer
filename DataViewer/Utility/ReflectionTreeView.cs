@@ -12,9 +12,11 @@ namespace DataViewer.Utility {
         private Tree _tree;
         private Tree _filteredTree;
 
+
         private float _height;
         private bool _mouseOver;
         private GUIStyle _buttonStyle;
+        private GUIStyle _valueStyle;
 
         private int _nodesCount;
         private int _startIndex;
@@ -54,6 +56,8 @@ namespace DataViewer.Utility {
                 return;
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
+            if (_valueStyle == null)
+                _valueStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
 
             int startIndexUBound = Math.Max(0, _nodesCount - MaxRows);
 
@@ -175,7 +179,7 @@ namespace DataViewer.Utility {
                         // value
                         Color originalColor = GUI.contentColor;
                         GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
-                        GUILayout.TextArea(node.ValueText);
+                        GUILayout.TextArea(node.ValueText, _valueStyle);
                         GUI.contentColor = originalColor;
 
                         // instance type

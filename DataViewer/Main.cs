@@ -1,9 +1,11 @@
-﻿using ModMaker;
+﻿using HarmonyLib;
+using ModMaker;
 using ModMaker.Utility;
 using System.Reflection;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using UnityEngine;
 using UnityModManagerNet;
 using Kingmaker;
 
@@ -13,12 +15,21 @@ namespace DataViewer
     [EnableReloading]
 #endif
     static class Main {
+        static Harmony HarmonyInstance;
+
         public static ModManager<Core, Settings> Mod;
         public static Settings settings { get { return Mod.Settings; } }
         public static bool IsInGame { get { return Game.Instance.Player.Party.Any(); } }
 
         public static MenuManager Menu;
         public static UnityModManager.ModEntry modEntry = null;
+
+        public static Rect ummRect = new Rect();
+        public static float ummWidth = 960f;
+        public static int ummTabID = 0;
+        public static bool IsNarrow { get { return ummWidth < 1600; } }
+        public static bool IsWide { get { return ummWidth >= 2000; } }
+
         public static void Log(string s) { if (modEntry != null) modEntry.Logger.Log(s); }
         static bool Load(UnityModManager.ModEntry modEntry) {
             Mod = new ModManager<Core, Settings>();
@@ -27,6 +38,9 @@ namespace DataViewer
 #if (DEBUG)
             modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
+
+            HarmonyInstance = new Harmony(modEntry.Info.Id);
+            HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
 
             return true;
         }
