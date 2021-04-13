@@ -51,7 +51,7 @@ namespace DataViewer.Utility.ReflectionTree {
      *                  parent.autoExpandKeys += parKey
      *              }
      *          }
-     *          else (value as Node).Search(keyPath + key, matches)
+     *          else (value as Node).Search(keyPath + k ey, matches)
      *          
      *          
      * Bool Matches(text)
