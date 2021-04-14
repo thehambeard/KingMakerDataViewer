@@ -56,6 +56,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="Utility\ReflectionTreeSearch.cs" />
     <Compile Include="Utility\ReflectionTree.cs" />
     <Compile Include="Utility\ReflectionTreeView.cs" />
     <Compile Include="Utility\UnsafeForceCast.cs" />

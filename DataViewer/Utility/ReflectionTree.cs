@@ -17,53 +17,6 @@ namespace DataViewer.Utility.ReflectionTree {
         Property
     }
 
-    /**
-     * Strategy For Async Deep Search
-     * 
-     * two coroutines implemented with Task() and async/await
-     *      Render Path - regular OnGUI on the main thread
-     *      Search Loop
-     *          background thread posting updates using IProgress on the main thread using something like
-     *              private async void Button_Click(object sender, EventArgs e) 
-     *              here https://stackoverflow.com/questions/12414601/async-await-vs-backgroundworker
-     * 
-     * Store Node.searchText as a static
-     * 
-     * Add to node
-     *      HashSet<String> autoExpandKeys
-     *      searchText
-     * 
-     * Node.Render(depth) - main thread (UI)
-     *      if (!autoExpandKeys.IsEmpty), foreach (key, value) display {key}, {value | Render(children+1) )
-     *      if (isExpanded) foreach (key, value) display {key}, {value | Render(children+1) )
-      *     yield
-     * 
-     * Node.Search(string[] keyPath, Func<Node,Bool> matches, int depth) - background thread
-     *      autoMatchKeys.Clear()
-     *      foreach (key, value) 
-     *          if (matches(key) autoExpandedKeys += key
-     *          if (value.isAtomic && matches(value))  autoExpandKeys += key
-     *          if we added any keys to autoMatchKeys then {
-     *              foreach parent = Node.parent until Node.IsRoot {
-     *                  depth -= 1
-     *                  parKey = keyPath[depth]
-     *                  if parent.autoMatchKeys.Contains(parKey) done // another branch pupulated through that key
-     *                  parent.autoExpandKeys += parKey
-     *              }
-     *          }
-     *          else (value as Node).Search(keyPath + k ey, matches)
-     *          
-     *          
-     * Bool Matches(text)
-     *      if (text.contains(searchText) return true
-     * 
-     * On User click expand for Node, Node.isExpanded = !Node.isExpanded
-     *      
-     * On searchText change
-     *      foreach Node in Tree, this.autoExpandeKeys.Clear()
-     *      
-     */
-
     public class Tree : Tree<object> {
         public Tree(object root) : base(root) { }
     }
@@ -87,7 +40,7 @@ namespace DataViewer.Utility.ReflectionTree {
         }
     }
 
-    public abstract class Node {
+    public abstract partial class Node {
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         public readonly NodeType NodeType;
@@ -133,10 +86,10 @@ namespace DataViewer.Utility.ReflectionTree {
                     yield return property;
             }
         }
-        public abstract IReadOnlyCollection<Node> GetComponentNodes();
         public abstract IReadOnlyCollection<Node> GetItemNodes();
-        public abstract IReadOnlyCollection<Node> GetFieldNodes();
+        public abstract IReadOnlyCollection<Node> GetComponentNodes();
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
+        public abstract IReadOnlyCollection<Node> GetFieldNodes();
         public abstract void SetDirty();
         internal abstract void SetValue(object value);
         protected abstract void UpdateValue();

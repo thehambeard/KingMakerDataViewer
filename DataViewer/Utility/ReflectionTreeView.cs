@@ -10,8 +10,6 @@ using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
         private Tree _tree;
-        private Tree _filteredTree;
-
 
         private float _height;
         private bool _mouseOver;
@@ -165,8 +163,14 @@ namespace DataViewer.Utility {
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
                         var name = node.Name;
-                        if (name.ToLower().Contains(searchTextLower))
-                            name = name.Bold();
+                        var nameLower = name.ToLower();
+                        if (searchTextLower.Length > 0 && nameLower.Contains(searchTextLower)) {
+                            var index = nameLower.IndexOf(searchTextLower);
+                            if (index >= 0) {
+                                var substr = name.Substring(index, searchText.Length);
+                                name = name.Replace(substr, substr.Cyan()).Bold();
+                            }
+                        }
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
                             name + " : " + node.Type.Name.Color(
@@ -217,7 +221,7 @@ namespace DataViewer.Utility {
         private void DrawChildren(Node node, int depth, bool collapse) {
             if (node.IsBaseType)
                 return;
-
+#if false
             var matches = new List<Node> { };
             var remaining = new List<Node> { };
             foreach (Node child in node.GetItemNodes()) {
@@ -247,10 +251,19 @@ namespace DataViewer.Utility {
             foreach (Node child in matches) {
                 DrawNode(child, depth, collapse);
             }
+            if (matches.Count() > 0) {
+                Rect rect = GUILayoutUtility.GetLastRect();
+                GUIHelper.Div(5f + DepthDelta * depth, 10);
+            }
             foreach (Node child in remaining) {
                 DrawNode(child, depth, collapse);
             }
-
+#else
+            foreach (var child in node.GetItemNodes()) { DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetComponentNodes()) { DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetPropertyNodes()) { DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetFieldNodes()) { DrawNode(child, depth, collapse); }
+#endif
         }
     }
 }
