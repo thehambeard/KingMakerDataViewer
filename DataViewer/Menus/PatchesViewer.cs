@@ -9,17 +9,6 @@ using UnityModManagerNet;
 using static DataViewer.Main;
 using static ModMaker.Utility.RichTextExtensions;
 
-using HarmonyLib;
-using ModMaker;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using UnityEngine;
-using UnityModManagerNet;
-using static DataViewer.Main;
-using static ModMaker.Utility.RichTextExtensions;
-
 namespace DataViewer.Menus {
     public class PatchesViewer : IMenuSelectablePage {
         private Dictionary<string, string> _modIdsToColor;
