@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static ModMaker.Utility.RichTextExtensions;
-using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
+using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
@@ -47,7 +47,7 @@ namespace DataViewer.Utility {
             else
                 _tree = new Tree(root);
 
-            _tree.RootNode.CustomFlags = (int)ToggleState.On;
+            _tree.RootNode.Expanded = ToggleState.On;
         }
        
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
@@ -80,7 +80,6 @@ namespace DataViewer.Utility {
             }
             using (new GUILayout.VerticalScope()) {
                 // toolbar
-                Main.Log("    2a");
                 using (new GUILayout.HorizontalScope()) {
                     if (GUILayout.Button("Collapse", GUILayout.ExpandWidth(false))) {
                         collapse = true;
@@ -109,7 +108,9 @@ namespace DataViewer.Utility {
 
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
-                    GUIHelper.TextField(ref searchText, null);
+                    GUIHelper.TextField(ref searchText, () => {
+                        _tree.RootNode.SearchAsync(searchText); 
+                    });
                     searchTextLower = searchText.ToLower();
                     //GUILayout.FlexibleSpace();
                 }
@@ -145,7 +146,7 @@ namespace DataViewer.Utility {
         }
 
         private void DrawNode(Node node, int depth, bool collapse) {
-            ToggleState expanded = (ToggleState)node.CustomFlags;
+            ToggleState expanded = node.Expanded;
 
             if (depth >= _skipLevels && !(collapse && depth > 0)) {
                 _nodesCount++;
@@ -155,37 +156,29 @@ namespace DataViewer.Utility {
                         if (!node.hasChildren) {
                             expanded = ToggleState.None;
                         }
-                        else if (node.CustomFlags == (int)ToggleState.None) {
+                        else if (node.Expanded == ToggleState.None) {
                             expanded = ToggleState.Off;
                         }
-                        node.CustomFlags = (int)expanded;
+                        node.Expanded = expanded;
 
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        var name = node.Name;
-                        var nameLower = name.ToLower();
-                        if (searchTextLower.Length > 0 && nameLower.Contains(searchTextLower)) {
-                            var index = nameLower.IndexOf(searchTextLower);
-                            if (index >= 0) {
-                                var substr = name.Substring(index, searchText.Length);
-                                name = name.Replace(substr, substr.Cyan()).Bold();
-                            }
-                        }
+                        var name = node.Name.MarkedSubstring(searchText);
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
                             name + " : " + node.Type.Name.Color(
                                 node.IsBaseType ? RGBA.grey :
                                 node.IsGameObject ? RGBA.magenta :
                                 node.IsEnumerable ? RGBA.cyan : RGBA.orange),
-                            () => node.CustomFlags = (int)ToggleState.On,
-                            () => node.CustomFlags = (int)ToggleState.Off,
+                            () => node.Expanded = ToggleState.On,
+                            () => node.Expanded = ToggleState.Off,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
                         ;
 
                         // value
                         Color originalColor = GUI.contentColor;
                         GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
-                        GUILayout.TextArea(node.ValueText, _valueStyle);
+                        GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText), _valueStyle);
                         GUI.contentColor = originalColor;
 
                         // instance type
@@ -196,7 +189,7 @@ namespace DataViewer.Utility {
             }
 
             if (collapse)
-                node.CustomFlags = (int)ToggleState.Off;
+                node.Expanded = ToggleState.Off;
 
             // children
             if (expanded.IsOn())

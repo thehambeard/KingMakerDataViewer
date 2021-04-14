@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
 using static ModMaker.Utility.RichTextExtensions;
-using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
+using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Menus
 {

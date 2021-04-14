@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
-using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
+using static ModMaker.Utility.RichTextExtensions;
+using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree {
 
@@ -57,20 +59,53 @@ namespace DataViewer.Utility.ReflectionTree {
      *      foreach Node in Tree, this.matches.Clear()
      *      
      */
+    public static class ReflectionTreeSearch {
+        public static bool Matches(this string source, string other) {
+            return source?.IndexOf(other, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
 
+        public static string MarkedSubstring(this string source, string other) {
+            if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(other)) return source;
+            var index = source.IndexOf(other, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0) {
+                var substr = source.Substring(index, other.Length);
+                    source = source.Replace(substr, substr.Cyan()).Bold();
+             }
+            return source;
+        }
+    }
     public partial class Node {
-
+        public static int SequenceNumber = 0;
         public async void SearchAsync(String searchText) {
+            this.SetDirty();
+            SequenceNumber++;
             IProgress<Node> matched = new Progress<Node>(node => {
-
+                while (node != null && !node.IsDirty()) {
+                    node.Expanded = ToggleState.On;
+                    node = node.GetParent();
+                }
             });
             await Task.Run(() => {
-                this.Search(searchText, new List<Node> { }, matched);
+                Search(searchText, new List<Node> { this }, matched, SequenceNumber);
             });
         }
 
-        private void Search(String searchText, List<Node> todo, IProgress<Node> matched) {
-
+        private static async void Search(String searchText, List<Node> todo, IProgress<Node> matched, int sequenceNumber) {
+            if (sequenceNumber != SequenceNumber) return;
+            var newTodo = new List<Node> { };
+            foreach (var node in todo) {
+                if (searchText.Length > 0 && (node.Name.Matches(searchText) || node.ValueText.Matches(searchText))) {
+                    matched.Report(node);
+                }
+                else if (node.Expanded == ToggleState.On && node.GetParent() != null) {
+                    node.Expanded = ToggleState.Off;
+                }
+                foreach (var child in node.GetItemNodes()) { newTodo.Add(child); }
+                foreach (var child in node.GetComponentNodes()) { newTodo.Add(child); }
+                foreach (var child in node.GetPropertyNodes()) { newTodo.Add(child); }
+                foreach (var child in node.GetFieldNodes()) { newTodo.Add(child); }
+            }
+            Search(searchText, newTodo, matched, sequenceNumber);
         }
     }
 }

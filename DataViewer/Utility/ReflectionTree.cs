@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
-using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
+using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree {
     public enum NodeType {
@@ -51,7 +51,7 @@ namespace DataViewer.Utility.ReflectionTree {
             Type = type;
             IsNullable = Type.IsGenericType && !Type.IsGenericTypeDefinition && Type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
-        public int CustomFlags { get; set; }
+        public ToggleState Expanded { get; set; }
         public bool hasChildren {
             get {
                 if (IsBaseType) return false;
@@ -90,7 +90,9 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract IReadOnlyCollection<Node> GetComponentNodes();
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
         public abstract IReadOnlyCollection<Node> GetFieldNodes();
+        public abstract Node GetParent();
         public abstract void SetDirty();
+        public abstract bool IsDirty();
         internal abstract void SetValue(object value);
         protected abstract void UpdateValue();
     }
@@ -205,9 +207,16 @@ namespace DataViewer.Utility.ReflectionTree {
             UpdatePropertyNodes();
             return _propertyNodes.AsReadOnly();
         }
+        public override Node GetParent() {
+            return null;
+        }
         public override void SetDirty() {
             _valueIsDirty = true;
         }
+        public override bool IsDirty() {
+            return _valueIsDirty;
+        }
+
         private void UpdateComponentNodes() {
             UpdateValue();
             if (!_componentIsDirty && _componentNodes != null) {
@@ -403,6 +412,12 @@ namespace DataViewer.Utility.ReflectionTree {
         }
         internal override void SetValue(object value) {
             throw new NotImplementedException();
+        }
+        public override Node GetParent() {
+            if (_parentNode.TryGetTarget(out GenericNode<TParent> parent)) {
+                return parent;
+            }
+            return null;
         }
     }
 

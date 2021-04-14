@@ -11,7 +11,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using ToggleState = ModMaker.Utility.GUIHelper.ToggleState;
+using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Menus {
     public class BlueprintViewer : IMenuSelectablePage {
