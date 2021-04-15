@@ -247,7 +247,7 @@ namespace DataViewer.Utility.ReflectionTree {
                     (_componentNodes[i] as ComponentNode).SetValue(item);
                 else
                     _componentNodes.Add(Activator.CreateInstance(
-                        nodeType, ALL_FLAGS, null, new object[] { "<component_" + i + ">", item }, null) as Node);
+                        nodeType, ALL_FLAGS, null, new object[] {this, "<component_" + i + ">", item }, null) as Node);
                 i++;
             }
 
@@ -284,13 +284,14 @@ namespace DataViewer.Utility.ReflectionTree {
                 if (i < count) {
                     if (_itemNodes[i].Type == itemType)
                         _itemNodes[i].SetValue(item);
-                    else
+                    else {
                         _itemNodes[i] = Activator.CreateInstance(
-                            nodeType, ALL_FLAGS, null, new object[] { "<item_" + i + ">", item }, null) as Node;
+                            nodeType, ALL_FLAGS, null, new object[] { this, "<item_" + i + ">", item }, null) as Node;
+                    }
                 }
                 else {
                     _itemNodes.Add(Activator.CreateInstance(
-                        nodeType, ALL_FLAGS, null, new object[] { "<item_" + i + ">", item }, null) as Node);
+                        nodeType, ALL_FLAGS, null, new object[] {this,  "<item_" + i + ">", item }, null) as Node);
                 }
                 i++;
             }
@@ -395,11 +396,29 @@ namespace DataViewer.Utility.ReflectionTree {
     }
 
     internal class ComponentNode : PassiveNode<Component> {
-        protected ComponentNode(string name, Component value) : base(name, value, NodeType.Component) { }
+        protected readonly WeakReference<Node> _parentNode;
+        protected ComponentNode(Node parentNode, string name, Component value) : base(name, value, NodeType.Component) {
+            _parentNode = new WeakReference<Node>(parentNode);
+        }
+        public override Node GetParent() {
+            if (_parentNode.TryGetTarget(out Node parent)) {
+                return parent;
+            }
+            return null;
+        }
     }
 
     internal class ItemNode<TNode> : PassiveNode<TNode> {
-        protected ItemNode(string name, TNode value) : base(name, value, NodeType.Item) { }
+        protected readonly WeakReference<Node> _parentNode;
+        protected ItemNode(Node parentNode, string name, TNode value) : base(name, value, NodeType.Item) {
+            _parentNode = new WeakReference<Node>(parentNode);
+        }
+        public override Node GetParent() {
+            if (_parentNode.TryGetTarget(out Node parent)) {
+                return parent;
+            }
+            return null;
+        }
     }
 
     internal abstract class ChildNode<TParent, TNode> : GenericNode<TNode> {

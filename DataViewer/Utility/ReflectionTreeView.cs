@@ -22,7 +22,6 @@ namespace DataViewer.Utility {
         private int _startIndex;
         private int _skipLevels;
         private String searchText = "";
-        private String searchTextLower = "";
         private int matchCount = 0;
         private int visitCount = 0;
         private int searchDepth = 0;
@@ -123,9 +122,9 @@ namespace DataViewer.Utility {
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, () => {
+                        searchText = searchText.Trim();
                         NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
                     }, null, GUILayout.Width(250));
-                    searchTextLower = searchText.ToLower();
                     GUILayout.Space(10f);
                     if (visitCount > 0) {
                         GUILayout.Label($"found {matchCount}".Cyan() + $" visited: {visitCount} (d: {searchDepth} b: {searchBreadth})".Orange());
