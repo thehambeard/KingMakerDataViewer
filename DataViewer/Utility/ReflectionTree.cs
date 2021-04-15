@@ -40,12 +40,14 @@ namespace DataViewer.Utility.ReflectionTree {
         }
     }
 
-    public abstract partial class Node {
+    public abstract class Node {
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         public readonly NodeType NodeType;
         public readonly Type Type;
         public readonly bool IsNullable;
+
+        public readonly HashSet<Node> matchSet = new HashSet<Node> { };
         protected Node(Type type, NodeType nodeType) {
             NodeType = nodeType;
             Type = type;

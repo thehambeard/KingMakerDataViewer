@@ -31,6 +31,7 @@ namespace DataViewer
         public static bool IsWide { get { return ummWidth >= 2000; } }
 
         public static void Log(string s) { if (modEntry != null) modEntry.Logger.Log(s); }
+        public static void Log(int indent, string s) { Log("    ".Repeat(indent) + s); }
         static bool Load(UnityModManager.ModEntry modEntry) {
             Mod = new ModManager<Core, Settings>();
             Menu = new MenuManager();

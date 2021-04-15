@@ -1,4 +1,5 @@
-﻿using DataViewer.Utility.ReflectionTree;
+﻿using Kingmaker;
+using DataViewer.Utility.ReflectionTree;
 using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,18 @@ namespace DataViewer.Utility {
         private int _skipLevels;
         private String searchText = "";
         private String searchTextLower = "";
+        private int matchCount = 0;
+        private int visitCount = 0;
+        private void updateCounts(int matchCount, int visitCount) { this.matchCount = matchCount; this.visitCount = visitCount; }
+        private NodeSearch _nodeSearch;
+        private NodeSearch nodeSearch { get {
+                if (_nodeSearch == null) {
+                    _nodeSearch = new GameObject().AddComponent<NodeSearch>();
+                    UnityEngine.Object.DontDestroyOnLoad(nodeSearch.gameObject);
+                }
+                return _nodeSearch;
+            }
+        }
 
         private Rect _viewerRect;
         public float DepthDelta { get; set; } = 30f;
@@ -48,6 +61,7 @@ namespace DataViewer.Utility {
                 _tree = new Tree(root);
 
             _tree.RootNode.Expanded = ToggleState.On;
+            nodeSearch.StartSearch(_tree.RootNode, searchText, updateCounts);
         }
        
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
@@ -57,7 +71,7 @@ namespace DataViewer.Utility {
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
             if (_valueStyle == null)
                 _valueStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
-
+       
             int startIndexUBound = Math.Max(0, _nodesCount - MaxRows);
 
             // mouse wheel & fix scroll position
@@ -109,10 +123,14 @@ namespace DataViewer.Utility {
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, () => {
-                        _tree.RootNode.SearchAsync(searchText); 
-                    });
+                        nodeSearch.StartSearch(_tree.RootNode, searchText, updateCounts);
+                    }, null, GUILayout.Width(250));
                     searchTextLower = searchText.ToLower();
-                    //GUILayout.FlexibleSpace();
+                    GUILayout.Space(10f);
+                    if (visitCount > 0) {
+                        GUILayout.Label($"{matchCount} matches".Cyan() + $" {visitCount} visited".Orange());
+                    }
+                    GUILayout.FlexibleSpace();
                 }
                 // view
                 using (new GUILayout.VerticalScope()) {
@@ -147,7 +165,9 @@ namespace DataViewer.Utility {
 
         private void DrawNode(Node node, int depth, bool collapse) {
             ToggleState expanded = node.Expanded;
-
+            // the following isn't right.  We need to implement storing a list of matching children in the node
+            //if (searchText.Length > 0 && node != _tree.RootNode && !node.Name.Matches(searchText) && !node.ValueText.Matches(searchText))
+            //    return;
             if (depth >= _skipLevels && !(collapse && depth > 0)) {
                 _nodesCount++;
 
@@ -214,49 +234,10 @@ namespace DataViewer.Utility {
         private void DrawChildren(Node node, int depth, bool collapse) {
             if (node.IsBaseType)
                 return;
-#if false
-            var matches = new List<Node> { };
-            var remaining = new List<Node> { };
-            foreach (Node child in node.GetItemNodes()) {
-                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
-                    matches.Add(child);
-                else
-                    remaining.Add(child);
-            }
-            foreach (Node child in node.GetComponentNodes()) {
-                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
-                    matches.Add(child);
-                else
-                    remaining.Add(child);
-            }
-            foreach (Node child in node.GetPropertyNodes()) {
-                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
-                    matches.Add(child);
-                else
-                    remaining.Add(child);
-            }
-            foreach (Node child in node.GetFieldNodes()) {
-                if (searchText.Length > 0 && child.Name.ToLower().Contains(searchTextLower))
-                    matches.Add(child);
-                else
-                    remaining.Add(child);
-            }
-            foreach (Node child in matches) {
-                DrawNode(child, depth, collapse);
-            }
-            if (matches.Count() > 0) {
-                Rect rect = GUILayoutUtility.GetLastRect();
-                GUIHelper.Div(5f + DepthDelta * depth, 10);
-            }
-            foreach (Node child in remaining) {
-                DrawNode(child, depth, collapse);
-            }
-#else
             foreach (var child in node.GetItemNodes()) { DrawNode(child, depth, collapse); }
             foreach (var child in node.GetComponentNodes()) { DrawNode(child, depth, collapse); }
             foreach (var child in node.GetPropertyNodes()) { DrawNode(child, depth, collapse); }
             foreach (var child in node.GetFieldNodes()) { DrawNode(child, depth, collapse); }
-#endif
         }
     }
 }
