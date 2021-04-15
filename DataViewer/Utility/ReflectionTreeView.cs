@@ -165,10 +165,18 @@ namespace DataViewer.Utility {
 
         private void DrawNode(Node node, int depth, bool collapse) {
             ToggleState expanded = node.Expanded;
+            if ((searchText.Length > 0)
+                && (node.ChildrenContainingMatches.Count == 0)
+                && !node.Name.Matches(searchText)
+                && !node.ValueText.Matches(searchText)
+                && node.GetParent()?.Expanded == ToggleState.Off) {
+                return;
+            }
+
             // the following isn't right.  We need to implement storing a list of matching children in the node
             //if (searchText.Length > 0 && node != _tree.RootNode && !node.Name.Matches(searchText) && !node.ValueText.Matches(searchText))
             //    return;
-            if (depth >= _skipLevels && !(collapse && depth > 0)) {
+                if (depth >= _skipLevels && !(collapse && depth > 0)) {
                 _nodesCount++;
 
                 if (_nodesCount > _startIndex && _nodesCount <= _startIndex + MaxRows) {
@@ -212,7 +220,7 @@ namespace DataViewer.Utility {
                 node.Expanded = ToggleState.Off;
 
             // children
-            if (expanded.IsOn())
+            if (expanded.IsOn() || node.ChildrenContainingMatches.Count > 0)
                 DrawChildren(node, depth + 1, collapse);
 
             string GetPrefix(NodeType nodeType) {
@@ -234,10 +242,12 @@ namespace DataViewer.Utility {
         private void DrawChildren(Node node, int depth, bool collapse) {
             if (node.IsBaseType)
                 return;
-            foreach (var child in node.GetItemNodes()) { DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetComponentNodes()) { DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetPropertyNodes()) { DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetFieldNodes()) { DrawNode(child, depth, collapse); }
+            var matches = node.ChildrenContainingMatches;
+            foreach (var child in matches) { DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetItemNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetComponentNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetPropertyNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
+            foreach (var child in node.GetFieldNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
         }
     }
 }

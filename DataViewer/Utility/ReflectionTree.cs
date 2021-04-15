@@ -47,7 +47,7 @@ namespace DataViewer.Utility.ReflectionTree {
         public readonly Type Type;
         public readonly bool IsNullable;
 
-        public readonly HashSet<Node> matchSet = new HashSet<Node> { };
+        public readonly HashSet<Node> ChildrenContainingMatches = new HashSet<Node> { };
         protected Node(Type type, NodeType nodeType) {
             NodeType = nodeType;
             Type = type;
@@ -214,6 +214,7 @@ namespace DataViewer.Utility.ReflectionTree {
         }
         public override void SetDirty() {
             _valueIsDirty = true;
+            ChildrenContainingMatches.Clear();
         }
         public override bool IsDirty() {
             return _valueIsDirty;

@@ -69,7 +69,7 @@ namespace DataViewer.Utility.ReflectionTree {
         private IEnumerator searchCoroutine;
         public static int SequenceNumber = 0;
         public delegate void SearchProgress(int matchCount, int visitCount);
-        public void StartSearch(Node node, String searchText, SearchProgress updator ) {
+        public void StartSearch(Node node, String searchText, SearchProgress updator) {
             if (searchCoroutine != null) {
                 StopCoroutine(searchCoroutine);
             }
@@ -78,9 +78,14 @@ namespace DataViewer.Utility.ReflectionTree {
             node.SetDirty();
             SequenceNumber++;
             Main.Log($"seq: {SequenceNumber} - search for: {searchText}");
-            if (searchText.Length == 0) return;
-            searchCoroutine = Search(searchText, new List<Node> { node }, 0, 0, 0, SequenceNumber, updator);
-            StartCoroutine(searchCoroutine);
+            if (searchText.Length == 0) {
+//                node.Expanded = ToggleState.On;
+            }
+            else {
+//                node.Expanded = ToggleState.Off;
+                searchCoroutine = Search(searchText, new List<Node> { node }, 0, 0, 0, SequenceNumber, updator);
+                StartCoroutine(searchCoroutine);
+            }
         }
         private IEnumerator Search(String searchText, List<Node> todo, int depth, int matchCount, int visitCount, int sequenceNumber, SearchProgress updator) {
             yield return null;
@@ -90,6 +95,7 @@ namespace DataViewer.Utility.ReflectionTree {
             foreach (var node in todo) {
                 bool foundMatch = false;
                 visitCount++;
+                node.ChildrenContainingMatches.Clear();
                 try {
                     if (node.Name.Matches(searchText) || node.ValueText.Matches(searchText)) {
                         Main.Log(depth, $"matched: {node.Name} - {node.ValueText}");
@@ -98,17 +104,19 @@ namespace DataViewer.Utility.ReflectionTree {
                         updator(matchCount, visitCount);
                         // if we match then mark all parents to root as expanded
                         var parent = node.GetParent();
-                            while (parent != null && !parent.IsDirty() && parent.Expanded != ToggleState.On) {
-                                parent.Expanded = ToggleState.On;
-                                parent = node.GetParent();
-                            }
+                        var child = node;
+                        while (parent != null) {
+                            parent.ChildrenContainingMatches.Add(child);
+                            child = parent;
+                            parent = parent.GetParent();
+                        }
                     }
                 }
                 catch (Exception e) {
                     Main.Log(depth, $"caught - {e}");
                 }
                 if (!foundMatch) {
-//                    Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
+                    //                    Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
                     if (node.Expanded == ToggleState.On && node.GetParent() != null) {
                         node.Expanded = ToggleState.Off;
                     }
