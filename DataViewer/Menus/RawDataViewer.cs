@@ -14,6 +14,11 @@ namespace DataViewer.Menus
 {
     public class RawDataViewer : IMenuSelectablePage
     {
+        public static IEnumerable<Scene> GetAllScenes() {
+            for (var i = 0; i < SceneManager.sceneCount; i++) {
+                yield return SceneManager.GetSceneAt(i);
+            }
+        }
         private static readonly Dictionary<string, Func<object>> TARGET_LIST = new Dictionary<string, Func<object>>()
         {
             { "None", null },
@@ -31,6 +36,9 @@ namespace DataViewer.Menus
             { "Inventory", () => Game.Instance?.Player?.Inventory },
             { "Quest Book", () => Game.Instance?.Player?.QuestBook },
             { "Kingdom", () => Game.Instance?.Player?.Kingdom },
+            { "Root Game Objects", () => RawDataViewer.GetAllScenes().SelectMany(s => s.GetRootGameObjects()) },
+            { "Game Objects", () => UnityEngine.Object.FindObjectsOfType<GameObject>() },
+            { "Unity Resources", () =>  Resources.FindObjectsOfTypeAll(typeof(GameObject)) },
        };
 
         private readonly string[] _targetNames = TARGET_LIST.Keys.ToArray();
