@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static ModMaker.Utility.StringExtensions;
 using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
 
@@ -24,15 +25,13 @@ namespace DataViewer.Utility {
         private String searchTextLower = "";
         private int matchCount = 0;
         private int visitCount = 0;
-        private void updateCounts(int matchCount, int visitCount) { this.matchCount = matchCount; this.visitCount = visitCount; }
-        private NodeSearch _nodeSearch;
-        private NodeSearch nodeSearch { get {
-                if (_nodeSearch == null) {
-                    _nodeSearch = new GameObject().AddComponent<NodeSearch>();
-                    UnityEngine.Object.DontDestroyOnLoad(nodeSearch.gameObject);
-                }
-                return _nodeSearch;
-            }
+        private int searchDepth = 0;
+        private int searchBreadth = 0;
+        private void updateCounts(int matchCount, int visitCount, int depth, int breadth) { 
+            this.matchCount = matchCount; 
+            this.visitCount = visitCount;
+            this.searchDepth = depth;
+            this.searchBreadth = breadth;
         }
 
         private Rect _viewerRect;
@@ -61,7 +60,7 @@ namespace DataViewer.Utility {
                 _tree = new Tree(root);
 
             _tree.RootNode.Expanded = ToggleState.On;
-            nodeSearch.StartSearch(_tree.RootNode, searchText, updateCounts);
+            NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
         }
        
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
@@ -113,22 +112,23 @@ namespace DataViewer.Utility {
 
                     GUILayout.Space(10f);
 
+#if false
                     GUILayout.Label("Title Width:", GUILayout.ExpandWidth(false));
                     TitleMinWidth = GUILayout.HorizontalSlider(TitleMinWidth, 0f, Screen.width / 2, GUILayout.Width(100f));
 
                     GUILayout.Space(10f);
-
-                    GUILayout.Label($"Scroll Pos: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
+#endif
+                    GUILayout.Label($"Scroll: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
 
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, () => {
-                        nodeSearch.StartSearch(_tree.RootNode, searchText, updateCounts);
+                        NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
                     }, null, GUILayout.Width(250));
                     searchTextLower = searchText.ToLower();
                     GUILayout.Space(10f);
                     if (visitCount > 0) {
-                        GUILayout.Label($"{matchCount} matches".Cyan() + $" {visitCount} visited".Orange());
+                        GUILayout.Label($"found {matchCount}".Cyan() + $" visited: {visitCount} (d: {searchDepth} b: {searchBreadth})".Orange());
                     }
                     GUILayout.FlexibleSpace();
                 }
@@ -167,8 +167,7 @@ namespace DataViewer.Utility {
             ToggleState expanded = node.Expanded;
             if ((searchText.Length > 0)
                 && (node.ChildrenContainingMatches.Count == 0)
-                && !node.Name.Matches(searchText)
-                && !node.ValueText.Matches(searchText)
+                && !node.Matches
                 && node.GetParent()?.Expanded == ToggleState.Off) {
                 return;
             }
@@ -191,7 +190,8 @@ namespace DataViewer.Utility {
 
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        var name = node.Name.MarkedSubstring(searchText);
+                        var name = node.Name;
+                        if (node.Matches) name = name.MarkedSubstring(searchText);
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
                             name + " : " + node.Type.Name.Color(

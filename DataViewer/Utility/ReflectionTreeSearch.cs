@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
+using static ModMaker.Utility.StringExtensions;
 using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
 
@@ -66,14 +67,25 @@ namespace DataViewer.Utility.ReflectionTree {
      *      
      */
     public partial class NodeSearch : MonoBehaviour {
+        private static NodeSearch _shared;
+        public static NodeSearch Shared {
+            get {
+                if (_shared == null) {
+                    _shared = new GameObject().AddComponent<NodeSearch>();
+                    UnityEngine.Object.DontDestroyOnLoad(_shared.gameObject);
+                }
+                return _shared;
+            }
+        }
+
         private IEnumerator searchCoroutine;
         public static int SequenceNumber = 0;
-        public delegate void SearchProgress(int matchCount, int visitCount);
+        public delegate void SearchProgress(int matchCount, int visitCount, int depth, int breadth);
         public void StartSearch(Node node, String searchText, SearchProgress updator) {
             if (searchCoroutine != null) {
                 StopCoroutine(searchCoroutine);
             }
-            updator(0, 0);
+            updator(0, 0, 0, 1);
             if (node == null) return;
             node.SetDirty();
             SequenceNumber++;
@@ -90,18 +102,20 @@ namespace DataViewer.Utility.ReflectionTree {
         private IEnumerator Search(String searchText, List<Node> todo, int depth, int matchCount, int visitCount, int sequenceNumber, SearchProgress updator) {
             yield return null;
             if (sequenceNumber != SequenceNumber) yield return null;
-            Main.Log(depth, $"depth: {depth} - count: {todo.Count}");
+            //Main.Log(depth, $"depth: {depth} - count: {todo.Count}");
             var newTodo = new List<Node> { };
+            var breadth = todo.Count();
             foreach (var node in todo) {
                 bool foundMatch = false;
                 visitCount++;
                 node.ChildrenContainingMatches.Clear();
+                node.Matches = false;
                 try {
-                    if (node.Name.Matches(searchText) || node.ValueText.Matches(searchText)) {
-                        Main.Log(depth, $"matched: {node.Name} - {node.ValueText}");
+                    if (node.Matches = Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
+                        //Main.Log(depth, $"matched: {node.Name} - {node.ValueText}");
                         foundMatch = true;
                         matchCount++;
-                        updator(matchCount, visitCount);
+                        updator(matchCount, visitCount, depth, breadth);
                         // if we match then mark all parents to root as expanded
                         var parent = node.GetParent();
                         var child = node;
@@ -120,14 +134,19 @@ namespace DataViewer.Utility.ReflectionTree {
                     if (node.Expanded == ToggleState.On && node.GetParent() != null) {
                         node.Expanded = ToggleState.Off;
                     }
-                    if (visitCount % 100 == 0) updator(matchCount, visitCount);
+                    if (visitCount % 100 == 0) updator(matchCount, visitCount, depth, breadth);
 
                 }
-                foreach (var child in node.GetItemNodes()) { newTodo.Add(child); }
-                foreach (var child in node.GetComponentNodes()) { newTodo.Add(child); }
-                foreach (var child in node.GetPropertyNodes()) { newTodo.Add(child); }
-                foreach (var child in node.GetFieldNodes()) { newTodo.Add(child); }
-                yield return null;
+                try {
+                    foreach (var child in node.GetItemNodes()) { newTodo.Add(child); }
+                    foreach (var child in node.GetComponentNodes()) { newTodo.Add(child); }
+                    foreach (var child in node.GetPropertyNodes()) { newTodo.Add(child); }
+                    foreach (var child in node.GetFieldNodes()) { newTodo.Add(child); }
+                }
+                catch (Exception e) {
+                    Main.Log(depth, $"caught - {e}");
+                }
+                if (visitCount % 100 == 0) yield return null;
             }
             yield return Search(searchText, newTodo, depth + 1, matchCount, visitCount, sequenceNumber, updator);
         }
