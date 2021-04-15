@@ -146,7 +146,10 @@ namespace DataViewer.Utility.ReflectionTree {
                 catch (Exception e) {
                     Main.Log(depth, $"caught - {e}");
                 }
-                if (visitCount % 100 == 0) yield return null;
+                if (visitCount % 100 == 0) {
+                    yield return Search(searchText, newTodo, depth + 1, matchCount, visitCount, sequenceNumber, updator);
+                    newTodo = new List<Node> { };
+                }
             }
             yield return Search(searchText, newTodo, depth + 1, matchCount, visitCount, sequenceNumber, updator);
         }
