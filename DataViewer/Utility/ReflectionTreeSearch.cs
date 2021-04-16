@@ -144,7 +144,7 @@ namespace DataViewer.Utility.ReflectionTree {
                         var child = node;
                         var depth2 = depth;
                         while (parent != null) {
-                            Main.Log(--depth2, $"< parent {parent.Name} child: {child.Name}");
+                            Main.Log(depth2--, $"< parent {parent.Name} value: {parent.ValueText}");
                             parent.ChildrenContainingMatches.Add(child);
                             child = parent;
                             parent = parent.GetParent();

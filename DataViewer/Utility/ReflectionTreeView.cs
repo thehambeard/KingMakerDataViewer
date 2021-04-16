@@ -204,7 +204,6 @@ namespace DataViewer.Utility {
                             () => node.Expanded = ToggleState.On,
                             () => node.Expanded = ToggleState.Off,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
-                        ;
 
                         // value
                         Color originalColor = GUI.contentColor;
@@ -216,6 +215,29 @@ namespace DataViewer.Utility {
                         if (node.InstType != null && node.InstType != node.Type)
                             GUILayout.Label(node.InstType.Name.Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
                     }
+#if false
+                    using (new GUILayout.HorizontalScope()) {
+                        // parent
+                        try {
+                            GUILayout.Space(DepthDelta * (depth - _skipLevels));
+                            var parent = node.GetParent();
+                            var parentText = "";
+                            while (parent != null) {
+                                parentText = parentText + parent.Name + " : " + parent.Type.Name;
+                                try {
+                                    parent = parent.GetParent();
+                                }
+                                catch (Exception e) {
+                                    parentText += e.ToString();
+                                    parent = null;
+                                }
+
+                            }
+                            GUILayout.Label(parentText);
+                        }
+                        catch (Exception e) { }
+                    }
+#endif
                 }
             }
 
