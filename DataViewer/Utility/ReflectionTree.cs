@@ -69,6 +69,7 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract bool IsException { get; }
         public abstract bool IsGameObject { get; }
         public abstract bool IsNull { get; }
+        public abstract int? InstanceID { get; }
         public static IEnumerable<FieldInfo> GetFields(Type type) {
             HashSet<string> names = new HashSet<string>();
             foreach (FieldInfo field in (Nullable.GetUnderlyingType(type) ?? type).GetFields(ALL_FLAGS)) {
@@ -191,6 +192,13 @@ namespace DataViewer.Utility.ReflectionTree {
             get {
                 UpdateValue();
                 return _isGameObject ?? (_isGameObject = typeof(GameObject).IsAssignableFrom(InstType ?? Type)).Value;
+            }
+        }
+        public override int? InstanceID {
+            get {
+                int? result = null;
+                if (Value is UnityEngine.Object unityObject) result = unityObject.GetInstanceID();
+                return result;
             }
         }
         public override bool IsNull => Value == null || ((Value is UnityEngine.Object unityObject) && !unityObject);

@@ -36,7 +36,7 @@ namespace DataViewer.Utility {
         private Rect _viewerRect;
         public float DepthDelta { get; set; } = 30f;
 
-        public int MaxRows { get; set; } = 20;
+        public int MaxRows { get { return Main.settings.maxRows; } }
 
         public object Root => _tree.Root;
 
@@ -107,7 +107,7 @@ namespace DataViewer.Utility {
 
                     GUILayout.Space(10f);
 
-                    MaxRows = GUIHelper.AdjusterButton(MaxRows, "Max Rows:", 10);
+                    Main.settings.maxRows = GUIHelper.AdjusterButton(Main.settings.maxRows, "Max Rows:", 10);
 
                     GUILayout.Space(10f);
 
@@ -125,6 +125,10 @@ namespace DataViewer.Utility {
                         searchText = searchText.Trim();
                         NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
                     }, null, GUILayout.Width(250));
+                    GUILayout.Space(10f);
+                    if (GUILayout.Button("Stop", GUILayout.ExpandWidth(false))) {
+                        NodeSearch.Shared.Stop();
+                    }
                     GUILayout.Space(10f);
                     if (visitCount > 0) {
                         GUILayout.Label($"found {matchCount}".Cyan() + $" visited: {visitCount} (d: {searchDepth} b: {searchBreadth})".Orange());
