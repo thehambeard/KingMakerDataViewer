@@ -95,10 +95,10 @@ namespace DataViewer.Utility.ReflectionTree {
             SequenceNumber++;
             Main.Log($"seq: {SequenceNumber} - search for: {searchText}");
             if (searchText.Length == 0) {
-//                node.Expanded = ToggleState.On;
+                //                node.Expanded = ToggleState.On;
             }
             else {
-//                node.Expanded = ToggleState.Off;
+                //                node.Expanded = ToggleState.Off;
                 searchCoroutine = Search(searchText, new List<Node> { node }, 0, 0, 0, SequenceNumber, updator);
                 StartCoroutine(searchCoroutine);
             }
@@ -113,7 +113,8 @@ namespace DataViewer.Utility.ReflectionTree {
         private IEnumerator Search(String searchText, List<Node> todo, int depth, int matchCount, int visitCount, int sequenceNumber, SearchProgress updator) {
             yield return null;
             if (sequenceNumber != SequenceNumber) yield return null;
-            Main.Log(depth, $"seq: {sequenceNumber} depth: {depth} - count: {todo.Count} - todo[0]: {todo.First().Name}");
+            var todoText = todo.Count > 0 ? todo.First().Name : "n/a";
+            Main.Log(depth, $"seq: {sequenceNumber} depth: {depth} - count: {todo.Count} - todo[0]: {todoText}");
             var newTodo = new List<Node> { };
             var breadth = todo.Count();
             foreach (var node in todo) {
@@ -124,73 +125,92 @@ namespace DataViewer.Utility.ReflectionTree {
                     if (VisitedInstanceIDs.Contains(instID))
                         alreadyVisted = true;
                     else {
-                        VisitedInstanceIDs.Add(instID);
+                        //VisitedInstanceIDs.Add(instID);
                     }
                 }
+                visitCount++;
                 if (!alreadyVisted) {
-                    visitCount++;
                     node.ChildrenContainingMatches.Clear();
+                    node.Matches = false;
                 }
-                node.Matches = false;
-                Main.Log(depth, $"node: {node.Name}");
+                //                Main.Log(depth, $"node: {node.Name}");
                 try {
                     if (node.Matches = Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
-                        Main.Log(depth, $"matched: {node.Name} - {node.ValueText}");
+                        Main.Log(depth, $"matched: {node.Name} - id: {node.InstanceID}- {node.ValueText}");
                         foundMatch = true;
-                        matchCount++;
-                        updator(matchCount, visitCount, depth, breadth);
-                        // if we match then mark all parents to root as expanded
-                        var parent = node.GetParent();
-                        var child = node;
-                        var depth2 = depth;
-                        while (parent != null) {
-                            Main.Log(depth2--, $"< parent {parent.Name} value: {parent.ValueText}");
-                            parent.ChildrenContainingMatches.Add(child);
-                            child = parent;
-                            parent = parent.GetParent();
-                        }
                     }
                 }
                 catch (Exception e) {
                     Main.Log(depth, $"caught - {e}");
                 }
+
+                if (foundMatch || node.ChildrenContainingMatches.Count > 0) {
+                    matchCount++;
+                    updator(matchCount, visitCount, depth, breadth);
+                    var parent = node.GetParent();
+                    var child = node;
+                    var depth2 = depth;
+                    while (parent != null) {
+                        Main.Log(depth2++, $"< parent {parent.Name} value: {parent.ValueText}");
+                        parent.ChildrenContainingMatches.Add(child);
+                        child = parent;
+                        parent = parent.GetParent();
+                    }
+                }
                 if (!foundMatch) {
                     //                    Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
-                    if (node.Expanded == ToggleState.On && node.GetParent() != null) {
-                        node.Expanded = ToggleState.Off;
-                    }
+                    //if (node.Expanded == ToggleState.On && node.GetParent() != null) {
+                    //    node.Expanded = ToggleState.Off;
+                    //}
                     if (visitCount % 100 == 0) updator(matchCount, visitCount, depth, breadth);
 
                 }
-                try {
-                    if (node.hasChildren && !alreadyVisted) {
-                        if (node.Name == "SyncRoot") break;
-                        if (node.Name == "normalized") break;
+                if (node.hasChildren && !alreadyVisted) {
+                    if (node.InstanceID is int instID2 && instID2 == this.GetInstanceID()) break;
+                    if (node.Name == "searchCoroutine") break;
+                    //if (node.Name == "SyncRoot") break;
+                    //if (node.Name == "normalized") break;
 
-                        foreach (var child in node.GetItemNodes()) { 
+                    try {
+                        foreach (var child in node.GetItemNodes()) {
                             //Main.Log(depth + 1, $"item: {child.Name}"); 
-                            newTodo.Add(child); 
+                            newTodo.Add(child);
                         }
+                    }
+                    catch (Exception e) {
+                        Main.Log(depth, $"caught - {e}");
+                    }
+                    try {
                         foreach (var child in node.GetComponentNodes()) {
                             //Main.Log(depth + 1, $"comp: {child.Name}"); 
                             newTodo.Add(child);
                         }
+                    }
+                    catch (Exception e) {
+                        Main.Log(depth, $"caught - {e}");
+                    }
+                    try {
                         foreach (var child in node.GetPropertyNodes()) {
                             //Main.Log(depth + 1, $"prop: {child.Name}");
                             newTodo.Add(child);
                         }
+                    }
+                    catch (Exception e) {
+                        Main.Log(depth, $"caught - {e}");
+                    }
+                    try {
                         foreach (var child in node.GetFieldNodes()) {
                             //Main.Log(depth + 1, $"field: {child.Name}");
                             newTodo.Add(child);
                         }
                     }
-                }
-                catch (Exception e) {
-                    Main.Log(depth, $"caught - {e}");
+                    catch (Exception e) {
+                        Main.Log(depth, $"caught - {e}");
+                    }
                 }
                 //if (visitCount % 1000 == 0) yield return null;
                 if (visitCount % 1000 == 0) {
-                    yield return Search(searchText, newTodo, depth , matchCount, visitCount, sequenceNumber, updator);
+                    yield return Search(searchText, newTodo, depth, matchCount, visitCount, sequenceNumber, updator);
                     newTodo = new List<Node> { };
                 }
             }

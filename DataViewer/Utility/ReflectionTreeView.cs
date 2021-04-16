@@ -194,13 +194,14 @@ namespace DataViewer.Utility {
                         // title
                         GUILayout.Space(DepthDelta * (depth - _skipLevels));
                         var name = node.Name;
-                        if (node.Matches) name = name.MarkedSubstring(searchText);
+                        var instText = ""; if (node.InstanceID is int instID) instText = "@" + instID.ToString();                        if (node.Matches) name = name.MarkedSubstring(searchText);
                         GUIHelper.ToggleButton(ref expanded,
                             GetPrefix(node.NodeType).Color(RGBA.grey) +
                             name + " : " + node.Type.Name.Color(
                                 node.IsBaseType ? RGBA.grey :
                                 node.IsGameObject ? RGBA.magenta :
-                                node.IsEnumerable ? RGBA.cyan : RGBA.orange),
+                                node.IsEnumerable ? RGBA.cyan : RGBA.orange)
+                            + instText,
                             () => node.Expanded = ToggleState.On,
                             () => node.Expanded = ToggleState.Off,
                             _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
