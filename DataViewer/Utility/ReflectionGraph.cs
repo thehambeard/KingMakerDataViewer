@@ -245,6 +245,7 @@ namespace DataViewer.Utility.ReflectionGraph {
             if (node == null) {
                 node = (Activator.CreateInstance(type, ALL_FLAGS, null, childArgs, null) as Node);
             }
+            return node;
         }
         private void UpdateComponentNodes() {
             UpdateValue();
@@ -317,7 +318,7 @@ namespace DataViewer.Utility.ReflectionGraph {
             Type nodeType = InstType.IsValueType ? !IsNullable ?
                 typeof(FieldOfStructNode<,,>) : typeof(FieldOfNullableNode<,,>) : typeof(FieldOfClassNode<,,>);
 
-            _fieldNodes = GetFields(InstType).Select(child => FindOrCreateChildForValue(child, nodeType.MakeGenericType(Type, InstType, child.FieldType), ALL_FLAGS, null, this, child.Name)).ToList();
+            _fieldNodes = GetFields(InstType).Select(child => FindOrCreateChildForValue(child, nodeType.MakeGenericType(Type, InstType, child.FieldType), this, child.Name)).ToList();
             //_fieldNodes = GetFields(InstType).Select(child => Activator.CreateInstance(
             //    nodeType.MakeGenericType(Type, InstType, child.FieldType),
             //    ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
@@ -344,8 +345,7 @@ namespace DataViewer.Utility.ReflectionGraph {
                 typeof(PropertyOfStructNode<,,>) : typeof(PropertyOfNullableNode<,,>) : typeof(PropertyOfClassNode<,,>);
 
             _propertyNodes = GetProperties(InstType).Select(child => FindOrCreateChildForValue(child,
-                nodeType.MakeGenericType(Type, InstType, child.PropertyType),
-                ALL_FLAGS, null, this, child.Name)).ToList();
+                nodeType.MakeGenericType(Type, InstType, child.PropertyType), this, child.Name)).ToList();
 
             _propertyNodes.Sort((x, y) => x.Name.CompareTo(y.Name));
         }
