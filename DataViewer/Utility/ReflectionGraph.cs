@@ -8,7 +8,7 @@ using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
 using ToggleState = ModMaker.Utility.ToggleState;
 
-namespace DataViewer.Utility.ReflectionTree {
+namespace DataViewer.Utility.ReflectionGraph {
     public enum NodeType {
         Root,
         Component,
@@ -17,18 +17,18 @@ namespace DataViewer.Utility.ReflectionTree {
         Property
     }
 
-    public class Tree : Tree<object> {
-        public Tree(object root) : base(root) { }
+    public class ReflectionGraph : ReflectionGraph<object> {
+        public ReflectionGraph(object root) : base(root) { }
     }
 
-    public class Tree<TRoot> {
+    public class ReflectionGraph<TRoot> {
         private RootNode<TRoot> _root;
 
         public TRoot Root => _root.Value;
 
         public Node RootNode => _root;
 
-        public Tree(TRoot root) {
+        public ReflectionGraph(TRoot root) {
             SetRoot(root);
         }
 
@@ -41,12 +41,16 @@ namespace DataViewer.Utility.ReflectionTree {
     }
 
     public abstract class Node {
+        // this allows us to avoid duplicated nodes for the same value
+        public static ConditionalWeakTable<object, Node> ValueToNodeLookup = new ConditionalWeakTable<object, Node>();
+
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         public readonly NodeType NodeType;
         public readonly Type Type;
         public readonly bool IsNullable;
 
+        [ObsoleteAttribute("TODO - get rid of this.", false)]
         public readonly HashSet<Node> ChildrenContainingMatches = new HashSet<Node> { };
         public bool Matches = false;
         protected Node(Type type, NodeType nodeType) {
@@ -54,6 +58,7 @@ namespace DataViewer.Utility.ReflectionTree {
             Type = type;
             IsNullable = Type.IsGenericType && !Type.IsGenericTypeDefinition && Type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
+        [ObsoleteAttribute("TODO - move this into a proper view model", false)]
         public ToggleState Expanded { get; set; }
         public bool hasChildren {
             get {
@@ -69,6 +74,8 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract bool IsException { get; }
         public abstract bool IsGameObject { get; }
         public abstract bool IsNull { get; }
+
+        [ObsoleteAttribute("TODO - get rid of this.", false)]
         public abstract int? InstanceID { get; }
         public static IEnumerable<FieldInfo> GetFields(Type type) {
             HashSet<string> names = new HashSet<string>();
@@ -94,6 +101,7 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract IReadOnlyCollection<Node> GetComponentNodes();
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
         public abstract IReadOnlyCollection<Node> GetFieldNodes();
+        [ObsoleteAttribute("TODO - get rid of this.", false)]
         public abstract Node GetParent();
         public abstract void SetDirty();
         public abstract bool IsDirty();
@@ -102,7 +110,7 @@ namespace DataViewer.Utility.ReflectionTree {
     }
 
     internal abstract class GenericNode<TNode> : Node {
-        // the tree will not show any child nodes of following types
+        // the graph will not show any child nodes of following types
         private static readonly HashSet<Type> BASE_TYPES = new HashSet<Type>()
         {
             typeof(object),
@@ -230,7 +238,14 @@ namespace DataViewer.Utility.ReflectionTree {
         public override bool IsDirty() {
             return _valueIsDirty;
         }
-
+        private Node FindOrCreateChildForValue(object item, Type type, params object[] childArgs) {
+            Node node = null;
+            if (item != null) 
+                ValueToNodeLookup.TryGetValue(item, out node);
+            if (node == null) {
+                node = (Activator.CreateInstance(type, ALL_FLAGS, null, childArgs, null) as Node);
+            }
+        }
         private void UpdateComponentNodes() {
             UpdateValue();
             if (!_componentIsDirty && _componentNodes != null) {
@@ -242,26 +257,16 @@ namespace DataViewer.Utility.ReflectionTree {
             if (_componentNodes == null) {
                 _componentNodes = new List<Node>();
             }
-
+            _componentNodes.Clear();
             if (IsException || IsNull || !IsGameObject) {
-                _componentNodes.Clear();
                 return;
             }
 
             Type nodeType = typeof(ComponentNode);
             int i = 0;
-            int count = _componentNodes.Count;
             foreach (Component item in (Value as GameObject).GetComponents<Component>()) {
-                if (i < count)
-                    (_componentNodes[i] as ComponentNode).SetValue(item);
-                else
-                    _componentNodes.Add(Activator.CreateInstance(
-                        nodeType, ALL_FLAGS, null, new object[] {this, "<component_" + i + ">", item }, null) as Node);
+                _componentNodes.Add(FindOrCreateChildForValue(item, nodeType, this, "<component_" + i + ">", item));
                 i++;
-            }
-
-            if (i < count) {
-                _componentNodes.RemoveRange(i, count - i);
             }
         }
         private void UpdateItemNodes() {
@@ -277,8 +282,8 @@ namespace DataViewer.Utility.ReflectionTree {
                 _itemNodes = new List<Node>();
             }
 
+            _itemNodes.Clear();
             if (IsException || IsNull || !IsEnumerable) {
-                _itemNodes.Clear();
                 return;
             }
 
@@ -288,25 +293,9 @@ namespace DataViewer.Utility.ReflectionTree {
             Type itemType = itemTypes.Count() == 1 ? itemTypes.First() : typeof(object);
             Type nodeType = typeof(ItemNode<>).MakeGenericType(itemType);
             int i = 0;
-            int count = _itemNodes.Count;
             foreach (object item in Value as IEnumerable) {
-                if (i < count) {
-                    if (_itemNodes[i].Type == itemType)
-                        _itemNodes[i].SetValue(item);
-                    else {
-                        _itemNodes[i] = Activator.CreateInstance(
-                            nodeType, ALL_FLAGS, null, new object[] { this, "<item_" + i + ">", item }, null) as Node;
-                    }
-                }
-                else {
-                    _itemNodes.Add(Activator.CreateInstance(
-                        nodeType, ALL_FLAGS, null, new object[] {this,  "<item_" + i + ">", item }, null) as Node);
-                }
+                _itemNodes.Add(FindOrCreateChildForValue(item, nodeType, this, "<item_" + i + ">", item));
                 i++;
-            }
-
-            if (i < count) {
-                _itemNodes.RemoveRange(i, count - i);
             }
         }
         private void UpdateFieldNodes() {
@@ -318,20 +307,20 @@ namespace DataViewer.Utility.ReflectionTree {
 
             _fieldIsDirty = false;
 
+            if (_fieldNodes == null)
+                _fieldNodes = new List<Node>();
+            _fieldNodes.Clear();
             if (IsException || IsNull) {
-                if (_fieldNodes == null)
-                    _fieldNodes = new List<Node>();
-                else
-                    _fieldNodes.Clear();
                 return;
             }
 
             Type nodeType = InstType.IsValueType ? !IsNullable ?
                 typeof(FieldOfStructNode<,,>) : typeof(FieldOfNullableNode<,,>) : typeof(FieldOfClassNode<,,>);
 
-            _fieldNodes = GetFields(InstType).Select(child => Activator.CreateInstance(
-                nodeType.MakeGenericType(Type, InstType, child.FieldType),
-                ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
+            _fieldNodes = GetFields(InstType).Select(child => FindOrCreateChildForValue(child, nodeType.MakeGenericType(Type, InstType, child.FieldType), ALL_FLAGS, null, this, child.Name)).ToList();
+            //_fieldNodes = GetFields(InstType).Select(child => Activator.CreateInstance(
+            //    nodeType.MakeGenericType(Type, InstType, child.FieldType),
+            //    ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
 
             _fieldNodes.Sort((x, y) => x.Name.CompareTo(y.Name));
         }
@@ -344,20 +333,19 @@ namespace DataViewer.Utility.ReflectionTree {
 
             _propertyIsDirty = false;
 
+            if (_propertyNodes == null)
+                _propertyNodes = new List<Node>();
+            _propertyNodes.Clear();
             if (IsException || IsNull) {
-                if (_propertyNodes == null)
-                    _propertyNodes = new List<Node>();
-                else
-                    _propertyNodes.Clear();
                 return;
             }
 
             Type nodeType = InstType.IsValueType ? !IsNullable ?
                 typeof(PropertyOfStructNode<,,>) : typeof(PropertyOfNullableNode<,,>) : typeof(PropertyOfClassNode<,,>);
 
-            _propertyNodes = GetProperties(InstType).Select(child => Activator.CreateInstance(
+            _propertyNodes = GetProperties(InstType).Select(child => FindOrCreateChildForValue(child,
                 nodeType.MakeGenericType(Type, InstType, child.PropertyType),
-                ALL_FLAGS, null, new object[] { this, child.Name }, null) as Node).ToList();
+                ALL_FLAGS, null, this, child.Name)).ToList();
 
             _propertyNodes.Sort((x, y) => x.Name.CompareTo(y.Name));
         }

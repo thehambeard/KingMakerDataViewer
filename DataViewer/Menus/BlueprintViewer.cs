@@ -1,5 +1,5 @@
 ﻿using DataViewer.Utility;
-using DataViewer.Utility.ReflectionTree;
+using DataViewer.Utility.ReflectionGraph;
 using Kingmaker.Blueprints;
 using HarmonyLib;
 using ModMaker;

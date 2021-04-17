@@ -14,7 +14,7 @@ using static ModMaker.Utility.StringExtensions;
 using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
 
-namespace DataViewer.Utility.ReflectionTree {
+namespace DataViewer.Utility.ReflectionGraph {
 
     /**
      * Strategy For Async Deep Search
@@ -125,7 +125,7 @@ namespace DataViewer.Utility.ReflectionTree {
                     if (VisitedInstanceIDs.Contains(instID))
                         alreadyVisted = true;
                     else {
-                        //VisitedInstanceIDs.Add(instID);
+                        VisitedInstanceIDs.Add(instID);
                     }
                 }
                 visitCount++;
@@ -158,7 +158,7 @@ namespace DataViewer.Utility.ReflectionTree {
                     }
                 }
                 if (!foundMatch) {
-                    //                    Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
+                    //Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
                     //if (node.Expanded == ToggleState.On && node.GetParent() != null) {
                     //    node.Expanded = ToggleState.Off;
                     //}

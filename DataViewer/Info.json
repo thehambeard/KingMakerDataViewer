@@ -1,10 +1,10 @@
 {
-    "Id": "DataViewer",
-    "DisplayName": "Data Viewer",
     "Author": "Narria (Enhanced WoTR port) Hsinyu (KingMaker version)",
-    "Version": "1.0.1",
-    "ManagerVersion": "0.23.0",
+    "DisplayName": "Data Viewer",
     "EntryMethod": "DataViewer.Main.Load",
     "HomePage": "https://www.nexusmods.com/pathfinderwrathoftherighteous/mods/9",
-    "Repository": "https://github.com/cabarius/WrathDataViewer/tree/5e650f29516fb692cb54c9f900ca7d4ddf124b6d"
+    "Id": "DataViewer",
+    "ManagerVersion": "0.23.0",
+    "Repository": "https://github.com/cabarius/WrathDataViewer/tree/5e650f29516fb692cb54c9f900ca7d4ddf124b6d",
+    "Version": "1.0.1"
 }
