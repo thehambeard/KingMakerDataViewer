@@ -60,7 +60,7 @@
     <Compile Include="Utility\ReflectionTreeSearch.cs" />
     <Compile Include="Utility\ReflectionGraph.cs" />
     <Compile Include="Utility\ReflectionTreeView.cs" />
-    <Compile Include="Utility\SearchResultsTree.cs" />
+    <Compile Include="Utility\TreeViewModel.cs" />
     <Compile Include="Utility\UnsafeForceCast.cs" />
   </ItemGroup>
   <ItemGroup>
