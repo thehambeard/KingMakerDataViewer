@@ -12,7 +12,7 @@ using ToggleState = ModMaker.Utility.ToggleState;
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
         private ReflectionTree.ReflectionTree _tree;
-
+        private ReflectionSearchResult _searchResults;
         private float _height;
         private bool _mouseOver;
         private GUIStyle _buttonStyle;
@@ -22,12 +22,10 @@ namespace DataViewer.Utility {
         private int _startIndex;
         private int _skipLevels;
         private String searchText = "";
-        private int matchCount = 0;
         private int visitCount = 0;
         private int searchDepth = 0;
         private int searchBreadth = 0;
-        private void updateCounts(int matchCount, int visitCount, int depth, int breadth) { 
-            this.matchCount = matchCount; 
+        private void updateCounts(int visitCount, int depth, int breadth) { 
             this.visitCount = visitCount;
             this.searchDepth = depth;
             this.searchBreadth = breadth;
@@ -50,6 +48,7 @@ namespace DataViewer.Utility {
 
         public void Clear() {
             _tree = null;
+            _searchResults.Clear();
         }
 
         public void SetRoot(object root) {
@@ -57,9 +56,9 @@ namespace DataViewer.Utility {
                 _tree.SetRoot(root);
             else
                 _tree = new ReflectionTree.ReflectionTree(root);
-
+            _searchResults.Node = null;
             _tree.RootNode.Expanded = ToggleState.On;
-            NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
+            NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
         }
        
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
@@ -91,7 +90,7 @@ namespace DataViewer.Utility {
                 }
             }
             using (new GUILayout.VerticalScope()) {
-                // toolbar
+                // tool-bar
                 using (new GUILayout.HorizontalScope()) {
                     if (GUILayout.Button("Collapse", GUILayout.ExpandWidth(false))) {
                         collapse = true;
@@ -123,7 +122,7 @@ namespace DataViewer.Utility {
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, () => {
                         searchText = searchText.Trim();
-                        NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);
+                        NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
                     }, null, GUILayout.Width(250));
                     GUILayout.Space(10f);
                     if (GUILayout.Button("Stop", GUILayout.ExpandWidth(false))) {
@@ -157,7 +156,7 @@ namespace DataViewer.Utility {
                         if (Event.current.type == EventType.Repaint) {
                             var mousePos = Event.current.mousePosition;
                             _mouseOver = _viewerRect.Contains(Event.current.mousePosition);
-                            //Main.Log($"mousePos: {mousePos} rect: {_viewerRect} --> {_mouseOver}");
+                            //Main.Log($"mousePos: {mousePos} Rect: {_viewerRect} --> {_mouseOver}");
                             _viewerRect = GUILayoutUtility.GetLastRect();
                             _height = _viewerRect.height + 5f;
                         }

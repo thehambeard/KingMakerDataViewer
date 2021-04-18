@@ -16,7 +16,7 @@ namespace DataViewer.Utility.ReflectionTree {
         Field,
         Property
     }
-
+    // This structure has evolved into a reflection graph or DAG but for the sake of continuity we will stick with calling it a tree
     public class ReflectionTree : ReflectionTree<object> {
         public ReflectionTree(object root) : base(root) { }
     }
@@ -49,10 +49,6 @@ namespace DataViewer.Utility.ReflectionTree {
         public readonly NodeType NodeType;
         public readonly Type Type;
         public readonly bool IsNullable;
-
-        [ObsoleteAttribute("TODO - get rid of this.", false)]
-        public readonly HashSet<Node> ChildrenContainingMatches = new HashSet<Node> { };
-        public bool Matches = false;
         protected Node(Type type, NodeType nodeType) {
             NodeType = nodeType;
             Type = type;
@@ -74,8 +70,6 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract bool IsException { get; }
         public abstract bool IsGameObject { get; }
         public abstract bool IsNull { get; }
-
-        [ObsoleteAttribute("TODO - get rid of this.", false)]
         public abstract int? InstanceID { get; }
         public static IEnumerable<FieldInfo> GetFields(Type type) {
             HashSet<string> names = new HashSet<string>();
@@ -101,7 +95,6 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract IReadOnlyCollection<Node> GetComponentNodes();
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
         public abstract IReadOnlyCollection<Node> GetFieldNodes();
-        [ObsoleteAttribute("TODO - get rid of this.", false)]
         public abstract Node GetParent();
         public abstract void SetDirty();
         public abstract bool IsDirty();
@@ -232,8 +225,6 @@ namespace DataViewer.Utility.ReflectionTree {
         }
         public override void SetDirty() {
             _valueIsDirty = true;
-            Matches = false;
-            ChildrenContainingMatches.Clear();
         }
         public override bool IsDirty() {
             return _valueIsDirty;

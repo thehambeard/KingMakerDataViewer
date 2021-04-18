@@ -67,8 +67,14 @@ namespace DataViewer.Utility.ReflectionTree {
      *      
      */
     public partial class NodeSearch : MonoBehaviour {
-        private static NodeSearch _shared;
+        public delegate void SearchProgress(int visitCount, int depth, int breadth);
+
         private static HashSet<int> VisitedInstanceIDs = new HashSet<int> { };
+        private static HashSet<int> MatchedIDs = new HashSet<int> { };
+        public static int SequenceNumber = 0;
+        private IEnumerator searchCoroutine;
+        private static NodeSearch _shared;
+
         public static NodeSearch Shared {
             get {
                 if (_shared == null) {
@@ -79,27 +85,25 @@ namespace DataViewer.Utility.ReflectionTree {
             }
         }
 
-        private IEnumerator searchCoroutine;
-        public static int SequenceNumber = 0;
-        public delegate void SearchProgress(int matchCount, int visitCount, int depth, int breadth);
-        public void StartSearch(Node node, String searchText, SearchProgress updator) {
+        public void StartSearch(Node node, String searchText, SearchProgress updator, ReflectionSearchResult resultRoot) {
             if (searchCoroutine != null) {
                 StopCoroutine(searchCoroutine);
                 searchCoroutine = null;
             }
             VisitedInstanceIDs.Clear();
+            MatchedIDs.Clear();
+            resultRoot.Clear();
+            resultRoot.Node = node;
             StopAllCoroutines();
-            updator(0, 0, 0, 1);
+            updator(0, 0, 1);
             if (node == null) return;
-            node.SetDirty();
             SequenceNumber++;
             Main.Log($"seq: {SequenceNumber} - search for: {searchText}");
             if (searchText.Length == 0) {
-                //                node.Expanded = ToggleState.On;
             }
             else {
-                //                node.Expanded = ToggleState.Off;
-                searchCoroutine = Search(searchText, new List<Node> { node }, 0, 0, 0, SequenceNumber, updator);
+                var todo = new List<Node> { node };
+                searchCoroutine = Search(searchText, todo , 0, 0, SequenceNumber, updator, resultRoot);
                 StartCoroutine(searchCoroutine);
             }
         }
@@ -110,7 +114,7 @@ namespace DataViewer.Utility.ReflectionTree {
             }
             StopAllCoroutines();
         }
-        private IEnumerator Search(String searchText, List<Node> todo, int depth, int matchCount, int visitCount, int sequenceNumber, SearchProgress updator) {
+        private IEnumerator Search(String searchText, List<Node> todo, int depth, int visitCount, int sequenceNumber, SearchProgress updator, ReflectionSearchResult resultRoot) {
             yield return null;
             if (sequenceNumber != SequenceNumber) yield return null;
             var todoText = todo.Count > 0 ? todo.First().Name : "n/a";
@@ -129,15 +133,11 @@ namespace DataViewer.Utility.ReflectionTree {
                     }
                 }
                 visitCount++;
-                if (!alreadyVisted) {
-                    node.ChildrenContainingMatches.Clear();
-                    node.Matches = false;
-                }
                 //                Main.Log(depth, $"node: {node.Name}");
                 try {
-                    if (node.Matches = Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
+                    if (foundMatch = Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
+                        MatchedIDs.Add(node.InstanceID);
                         Main.Log(depth, $"matched: {node.Name} - id: {node.InstanceID}- {node.ValueText}");
-                        foundMatch = true;
                     }
                 }
                 catch (Exception e) {
@@ -145,24 +145,15 @@ namespace DataViewer.Utility.ReflectionTree {
                 }
 
                 if (foundMatch || node.ChildrenContainingMatches.Count > 0) {
-                    matchCount++;
-                    updator(matchCount, visitCount, depth, breadth);
-                    var parent = node.GetParent();
-                    var child = node;
-                    var depth2 = depth;
-                    while (parent != null) {
-                        Main.Log(depth2++, $"< parent {parent.Name} value: {parent.ValueText}");
-                        parent.ChildrenContainingMatches.Add(child);
-                        child = parent;
-                        parent = parent.GetParent();
-                    }
+                    updator(visitCount, depth, breadth);
+                    resultRoot.AddSearchResult(node);
                 }
                 if (!foundMatch) {
                     //Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
                     //if (node.Expanded == ToggleState.On && node.GetParent() != null) {
                     //    node.Expanded = ToggleState.Off;
                     //}
-                    if (visitCount % 100 == 0) updator(matchCount, visitCount, depth, breadth);
+                    if (visitCount % 100 == 0) updator(visitCount, depth, breadth);
 
                 }
                 if (node.hasChildren && !alreadyVisted) {
@@ -210,11 +201,11 @@ namespace DataViewer.Utility.ReflectionTree {
                 }
                 //if (visitCount % 1000 == 0) yield return null;
                 if (visitCount % 1000 == 0) {
-                    yield return Search(searchText, newTodo, depth, matchCount, visitCount, sequenceNumber, updator);
+                    yield return Search(searchText, newTodo, depth, visitCount, sequenceNumber, updator, resultRoot);
                     newTodo = new List<Node> { };
                 }
             }
-            yield return Search(searchText, newTodo, depth + 1, matchCount, visitCount, sequenceNumber, updator);
+            yield return Search(searchText, newTodo, depth + 1, visitCount, sequenceNumber, updator, resultRoot);
         }
     }
 }

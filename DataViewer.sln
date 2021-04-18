@@ -7,6 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataViewer", "DataViewer\Da
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ModMaker", "..\WrathModMaker\ModMaker\ModMaker.shproj", "{7D3F9428-C134-47FE-9D04-305B4D330401}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0583ADFA-2533-4CE6-AB4A-06818BA4107A}"
+	ProjectSection(SolutionItems) = preProject
+		DataViewer.sln.vsspell = DataViewer.sln.vsspell
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\WrathModMaker\ModMaker\ModMaker.projitems*{7d3f9428-c134-47fe-9d04-305b4d330401}*SharedItemsImports = 13
