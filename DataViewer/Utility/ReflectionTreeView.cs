@@ -1,5 +1,5 @@
 ﻿using Kingmaker;
-using DataViewer.Utility.ReflectionGraph;
+using DataViewer.Utility.ReflectionTree;
 using ModMaker.Utility;
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
-        private ReflectionGraph.ReflectionGraph _tree;
+        private ReflectionTree.ReflectionTree _tree;
 
         private float _height;
         private bool _mouseOver;
@@ -56,7 +56,7 @@ namespace DataViewer.Utility {
             if (_tree != null)
                 _tree.SetRoot(root);
             else
-                _tree = new ReflectionGraph.ReflectionGraph(root);
+                _tree = new ReflectionTree.ReflectionTree(root);
 
             _tree.RootNode.Expanded = ToggleState.On;
             NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts);

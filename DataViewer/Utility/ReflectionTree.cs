@@ -8,7 +8,7 @@ using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
 using ToggleState = ModMaker.Utility.ToggleState;
 
-namespace DataViewer.Utility.ReflectionGraph {
+namespace DataViewer.Utility.ReflectionTree {
     public enum NodeType {
         Root,
         Component,
@@ -17,18 +17,18 @@ namespace DataViewer.Utility.ReflectionGraph {
         Property
     }
 
-    public class ReflectionGraph : ReflectionGraph<object> {
-        public ReflectionGraph(object root) : base(root) { }
+    public class ReflectionTree : ReflectionTree<object> {
+        public ReflectionTree(object root) : base(root) { }
     }
 
-    public class ReflectionGraph<TRoot> {
+    public class ReflectionTree<TRoot> {
         private RootNode<TRoot> _root;
 
         public TRoot Root => _root.Value;
 
         public Node RootNode => _root;
 
-        public ReflectionGraph(TRoot root) {
+        public ReflectionTree(TRoot root) {
             SetRoot(root);
         }
 

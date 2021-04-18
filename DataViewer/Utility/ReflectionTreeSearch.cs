@@ -14,7 +14,7 @@ using static ModMaker.Utility.StringExtensions;
 using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
 
-namespace DataViewer.Utility.ReflectionGraph {
+namespace DataViewer.Utility.ReflectionTree {
 
     /**
      * Strategy For Async Deep Search
