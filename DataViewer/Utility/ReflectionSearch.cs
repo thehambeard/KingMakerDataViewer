@@ -50,11 +50,11 @@ namespace DataViewer.Utility.ReflectionTree {
      *              foreach parent = Node.parent until Node.IsRoot {
      *                  depth -= 1
      *                  parKey = keyPath[depth]
-     *                  if parent.autoMatchKeys.Contains(parKey) done // another branch pupulated through that key
+     *                  if parent.autoMatchKeys.Contains(parKey) done // another branch populated through that key
      *                  parent.matches += parKey
      *              }
      *          }
-     *          else (value as Node).Search(keyPath + k ey, matches)
+     *          else (value as Node).Search(keyPath + key, matches)
      *          
      *          
      * Bool Matches(text)
@@ -70,7 +70,6 @@ namespace DataViewer.Utility.ReflectionTree {
         public delegate void SearchProgress(int visitCount, int depth, int breadth);
 
         private static HashSet<int> VisitedInstanceIDs = new HashSet<int> { };
-        private static HashSet<int> MatchedIDs = new HashSet<int> { };
         public static int SequenceNumber = 0;
         private IEnumerator searchCoroutine;
         private static NodeSearch _shared;
@@ -91,7 +90,6 @@ namespace DataViewer.Utility.ReflectionTree {
                 searchCoroutine = null;
             }
             VisitedInstanceIDs.Clear();
-            MatchedIDs.Clear();
             resultRoot.Clear();
             resultRoot.Node = node;
             StopAllCoroutines();
@@ -135,19 +133,18 @@ namespace DataViewer.Utility.ReflectionTree {
                 visitCount++;
                 //                Main.Log(depth, $"node: {node.Name}");
                 try {
-                    if (foundMatch = Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
-                        MatchedIDs.Add(node.InstanceID);
+                    if (Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
+                        foundMatch = true;
+                        updator(visitCount, depth, breadth);
+                        resultRoot.AddSearchResult(node);
                         Main.Log(depth, $"matched: {node.Name} - id: {node.InstanceID}- {node.ValueText}");
+                        //Main.Log($"{resultRoot.ToString()}");
                     }
                 }
                 catch (Exception e) {
                     Main.Log(depth, $"caught - {e}");
                 }
-
-                if (foundMatch || node.ChildrenContainingMatches.Count > 0) {
-                    updator(visitCount, depth, breadth);
-                    resultRoot.AddSearchResult(node);
-                }
+                node.Matches = foundMatch;
                 if (!foundMatch) {
                     //Main.Log(depth, $"NOT matched: {node.Name} - {node.ValueText}");
                     //if (node.Expanded == ToggleState.On && node.GetParent() != null) {
@@ -205,7 +202,8 @@ namespace DataViewer.Utility.ReflectionTree {
                     newTodo = new List<Node> { };
                 }
             }
-            yield return Search(searchText, newTodo, depth + 1, visitCount, sequenceNumber, updator, resultRoot);
+            if (newTodo.Count > 0) 
+                yield return Search(searchText, newTodo, depth + 1, visitCount, sequenceNumber, updator, resultRoot);
         }
     }
 }

@@ -56,6 +56,24 @@ namespace DataViewer.Utility.ReflectionTree {
         }
         [ObsoleteAttribute("TODO - move this into a proper view model", false)]
         public ToggleState Expanded { get; set; }
+        [ObsoleteAttribute("TODO - move this into a proper view model", false)]
+        public bool Matches { get; set; }
+        public string NodeTypePrefix {
+            get {
+                switch (NodeType) {
+                    case NodeType.Component:
+                        return "c";
+                    case NodeType.Item:
+                        return "i";
+                    case NodeType.Field:
+                        return "f";
+                    case NodeType.Property:
+                        return "p";
+                    default:
+                        return string.Empty;
+                }
+            }
+        }
         public bool hasChildren {
             get {
                 if (IsBaseType) return false;

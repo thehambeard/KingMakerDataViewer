@@ -12,7 +12,7 @@ using ToggleState = ModMaker.Utility.ToggleState;
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
         private ReflectionTree.ReflectionTree _tree;
-        private ReflectionSearchResult _searchResults;
+        private ReflectionSearchResult _searchResults = new ReflectionSearchResult();
         private float _height;
         private bool _mouseOver;
         private GUIStyle _buttonStyle;
@@ -25,7 +25,7 @@ namespace DataViewer.Utility {
         private int visitCount = 0;
         private int searchDepth = 0;
         private int searchBreadth = 0;
-        private void updateCounts(int visitCount, int depth, int breadth) { 
+        private void updateCounts(int visitCount, int depth, int breadth) {
             this.visitCount = visitCount;
             this.searchDepth = depth;
             this.searchBreadth = breadth;
@@ -60,7 +60,7 @@ namespace DataViewer.Utility {
             _tree.RootNode.Expanded = ToggleState.On;
             NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
         }
-       
+
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
             if (_tree == null)
                 return;
@@ -68,7 +68,7 @@ namespace DataViewer.Utility {
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
             if (_valueStyle == null)
                 _valueStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleLeft, stretchHeight = true };
-       
+
             int startIndexUBound = Math.Max(0, _nodesCount - MaxRows);
 
             // mouse wheel & fix scroll position
@@ -96,20 +96,13 @@ namespace DataViewer.Utility {
                         collapse = true;
                         _skipLevels = 0;
                     }
-
                     if (GUILayout.Button("Refresh", GUILayout.ExpandWidth(false)))
                         _tree.RootNode.SetDirty();
-
                     GUILayout.Space(10f);
-
                     GUIHelper.AdjusterButton(ref _skipLevels, "Skip Levels:", 0);
-
                     GUILayout.Space(10f);
-
                     Main.settings.maxRows = GUIHelper.AdjusterButton(Main.settings.maxRows, "Max Rows:", 10);
-
                     GUILayout.Space(10f);
-
 #if false
                     GUILayout.Label("Title Width:", GUILayout.ExpandWidth(false));
                     TitleMinWidth = GUILayout.HorizontalSlider(TitleMinWidth, 0f, Screen.width / 2, GUILayout.Width(100f));
@@ -117,7 +110,6 @@ namespace DataViewer.Utility {
                     GUILayout.Space(10f);
 #endif
                     GUILayout.Label($"Scroll: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
-
                     GUILayout.Space(10f);
                     GUILayout.Label("Search", GUILayout.ExpandWidth(false));
                     GUIHelper.TextField(ref searchText, () => {
@@ -130,7 +122,7 @@ namespace DataViewer.Utility {
                     }
                     GUILayout.Space(10f);
                     if (visitCount > 0) {
-                        GUILayout.Label($"found {matchCount}".Cyan() + $" visited: {visitCount} (d: {searchDepth} b: {searchBreadth})".Orange());
+                        GUILayout.Label($"found {_searchResults.Count}".Cyan() + $" visited: {visitCount} (d: {searchDepth} b: {searchBreadth})".Orange());
                     }
                     GUILayout.FlexibleSpace();
                 }
@@ -141,6 +133,25 @@ namespace DataViewer.Utility {
                             // nodes
                             using (new GUILayout.VerticalScope()) {
                                 _nodesCount = 0;
+                                if (searchText.Length > 0) {
+                                    _searchResults.Traverse((node, depth) => {
+                                        var toggleState = node.ToggleState;
+                                        if (!node.Node.hasChildren)
+                                            toggleState = ToggleState.None;
+                                        else if (node.ToggleState == ToggleState.None)
+                                            toggleState = ToggleState.Off;
+                                        if (node.Node.NodeType == NodeType.Root)
+                                            GUILayout.Label("Search Results".Cyan().Bold());
+                                        else
+                                            DrawNodePrivate(node.Node, depth, ref toggleState);
+                                        if (node.ToggleState != toggleState) { Main.Log(node.ToString()); }
+                                        node.ToggleState = toggleState;
+                                        if (toggleState.IsOn()) {
+                                            DrawChildren(node.Node, depth + 1, collapse);
+                                        }
+                                        return true; // toggleState == ToggleState.On;
+                                    }, 0);
+                                }
                                 if (drawRoot)
                                     DrawNode(_tree.RootNode, 0, collapse);
                                 else
@@ -148,8 +159,8 @@ namespace DataViewer.Utility {
                             }
 
                             // scrollbar
-//                            if (startIndexUBound > 0)
-                                _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, _nodesCount, GUILayout.ExpandHeight(true));
+                            //                            if (startIndexUBound > 0)
+                            _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, _nodesCount, GUILayout.ExpandHeight(true));
                         }
 
                         // cache height
@@ -164,57 +175,73 @@ namespace DataViewer.Utility {
                 }
             }
         }
+        private void DrawNodePrivate(Node node, int depth, ref ToggleState expanded) {
+            _nodesCount++;
 
+            if (_nodesCount > _startIndex && _nodesCount <= _startIndex + MaxRows) {
+
+                using (new GUILayout.HorizontalScope()) {
+                    // title
+                    GUILayout.Space(DepthDelta * (depth - _skipLevels));
+                    var name = node.Name;
+                    var instText = "";  // if (node.InstanceID is int instID) instText = "@" + instID.ToString();
+                    name = name.MarkedSubstring(searchText);
+                    GUIHelper.ToggleButton(ref expanded,
+                        $"[{node.NodeTypePrefix}] ".Color(RGBA.grey) +
+                        name + " : " + node.Type.Name.Color(
+                            node.IsBaseType ? RGBA.grey :
+                            node.IsGameObject ? RGBA.magenta :
+                            node.IsEnumerable ? RGBA.cyan : RGBA.orange)
+                        + instText,
+                        _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
+
+                    // value
+                    Color originalColor = GUI.contentColor;
+                    GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
+                    GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText), _valueStyle);
+                    GUI.contentColor = originalColor;
+
+                    // instance type
+                    if (node.InstType != null && node.InstType != node.Type)
+                        GUILayout.Label(node.InstType.Name.Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
+                }
+            }
+        }
         private void DrawNode(Node node, int depth, bool collapse) {
             ToggleState expanded = node.Expanded;
-            if ((searchText.Length > 0)
-                && (node.ChildrenContainingMatches.Count == 0)
-                && !node.Matches
-                && node.GetParent()?.Expanded == ToggleState.Off) {
-                return;
+            if (depth >= _skipLevels && !(collapse && depth > 0)) {
+                if (!node.hasChildren)
+                    expanded = ToggleState.None;
+                else if (node.Expanded == ToggleState.None)
+                    expanded = ToggleState.Off;
+                DrawNodePrivate(node, depth, ref expanded);
+                node.Expanded = expanded;
             }
+            if (collapse)
+                node.Expanded = ToggleState.Off;
 
-            // the following isn't right.  We need to implement storing a list of matching children in the node
-            //if (searchText.Length > 0 && node != _tree.RootNode && !node.Name.Matches(searchText) && !node.ValueText.Matches(searchText))
-            //    return;
-                if (depth >= _skipLevels && !(collapse && depth > 0)) {
-                _nodesCount++;
+            // children
+            if (expanded.IsOn()) {
+                DrawChildren(node, depth + 1, collapse);
+            }
+        }
 
-                if (_nodesCount > _startIndex && _nodesCount <= _startIndex + MaxRows) {
-                    using (new GUILayout.HorizontalScope()) {
-                        if (!node.hasChildren) {
-                            expanded = ToggleState.None;
-                        }
-                        else if (node.Expanded == ToggleState.None) {
-                            expanded = ToggleState.Off;
-                        }
-                        node.Expanded = expanded;
+        private void DrawChildren(Node node, int depth, bool collapse, Func<Node, bool> hoist = null) {
+            if (node.IsBaseType)
+                return;
+            if (hoist == null) hoist = (n) => n.Matches;
+            var toHoist = new List<Node>();
+            var others = new List<Node>();
+            foreach (var child in node.GetItemNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
+            foreach (var child in node.GetComponentNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
+            foreach (var child in node.GetPropertyNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
+            foreach (var child in node.GetFieldNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
+            foreach (var child in toHoist) { DrawNode(child, depth, collapse); }
+            foreach (var child in others) { DrawNode(child, depth, collapse); }
+        }
+    }
+}
 
-                        // title
-                        GUILayout.Space(DepthDelta * (depth - _skipLevels));
-                        var name = node.Name;
-                        var instText = ""; if (node.InstanceID is int instID) instText = "@" + instID.ToString();                        if (node.Matches) name = name.MarkedSubstring(searchText);
-                        GUIHelper.ToggleButton(ref expanded,
-                            GetPrefix(node.NodeType).Color(RGBA.grey) +
-                            name + " : " + node.Type.Name.Color(
-                                node.IsBaseType ? RGBA.grey :
-                                node.IsGameObject ? RGBA.magenta :
-                                node.IsEnumerable ? RGBA.cyan : RGBA.orange)
-                            + instText,
-                            () => node.Expanded = ToggleState.On,
-                            () => node.Expanded = ToggleState.Off,
-                            _buttonStyle, GUILayout.ExpandWidth(false), GUILayout.MinWidth(TitleMinWidth));
-
-                        // value
-                        Color originalColor = GUI.contentColor;
-                        GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
-                        GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText), _valueStyle);
-                        GUI.contentColor = originalColor;
-
-                        // instance type
-                        if (node.InstType != null && node.InstType != node.Type)
-                            GUILayout.Label(node.InstType.Name.Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
-                    }
 #if false
                     using (new GUILayout.HorizontalScope()) {
                         // parent
@@ -238,41 +265,3 @@ namespace DataViewer.Utility {
                         catch (Exception e) { }
                     }
 #endif
-                }
-            }
-
-            if (collapse)
-                node.Expanded = ToggleState.Off;
-
-            // children
-            if (expanded.IsOn() || node.ChildrenContainingMatches.Count > 0)
-                DrawChildren(node, depth + 1, collapse);
-
-            string GetPrefix(NodeType nodeType) {
-                switch (nodeType) {
-                    case NodeType.Component:
-                        return "[c] ";
-                    case NodeType.Item:
-                        return "[i] ";
-                    case NodeType.Field:
-                        return "[f] ";
-                    case NodeType.Property:
-                        return "[p] ";
-                    default:
-                        return string.Empty;
-                }
-            }
-        }
-
-        private void DrawChildren(Node node, int depth, bool collapse) {
-            if (node.IsBaseType)
-                return;
-            var matches = node.ChildrenContainingMatches;
-            foreach (var child in matches) { DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetItemNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetComponentNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetPropertyNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
-            foreach (var child in node.GetFieldNodes()) { if (!matches.Contains(child)) DrawNode(child, depth, collapse); }
-        }
-    }
-}
