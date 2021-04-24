@@ -253,6 +253,8 @@ namespace DataViewer.Utility.ReflectionTree {
                 ValueToNodeLookup.TryGetValue(item, out node);
             if (node == null) {
                 node = (Activator.CreateInstance(type, ALL_FLAGS, null, childArgs, null) as Node);
+                if (item != null) 
+                    ValueToNodeLookup.Add(item, node);
             }
             return node;
         }

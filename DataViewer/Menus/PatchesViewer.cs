@@ -14,20 +14,21 @@ namespace DataViewer.Menus {
         private Dictionary<string, string> _modIdsToColor;
         private string _modId;
         private static Dictionary<MethodBase, List<Patch>> _patches = null;
-
         private GUIStyle _buttonStyle;
-
         public string Name => "Patches";
-
         public int Priority => 900;
-
+        bool firstTime = true;
         public void OnGUI(UnityModManager.ModEntry modEntry) {
             if (Mod == null || !Mod.Enabled)
                 return;
 
             if (_buttonStyle == null)
                 _buttonStyle = new GUIStyle(GUI.skin.button) { alignment = TextAnchor.MiddleLeft };
-
+            if (firstTime) {
+                RefreshListOfPatchOwners(modEntry.Info.Id);
+                RefreshPatchInfoOfAllMods(modEntry.Info.Id);
+                firstTime = false;
+            }
             try {
                 using (new GUILayout.HorizontalScope()) {
                     // modId <=> color
@@ -46,15 +47,17 @@ namespace DataViewer.Menus {
                     // mod selection
                     if (_modIdsToColor != null) {
                         using (new GUILayout.VerticalScope()) {
-                            if (GUILayout.Button("None", _buttonStyle)) {
+                            if (GUILayout.Button("All", _buttonStyle)) {
                                 _patches = null;
                                 _modId = null;
+                                RefreshPatchInfoOfAllMods(modEntry.Info.Id);
                             }
 
                             foreach (KeyValuePair<string, string> pair in _modIdsToColor) {
                                 if (GUILayout.Button(pair.Key.Color(pair.Value), _buttonStyle)) {
                                     _patches = null;
                                     _modId = pair.Key;
+                                    RefreshPatchInfoOfSelected(_modId);
                                 }
                             }
                         }
@@ -64,38 +67,45 @@ namespace DataViewer.Menus {
                 }
 
                 // info selection
-                if (_modIdsToColor != null && !string.IsNullOrEmpty(_modId)) {
+                if (_modIdsToColor != null) {
                     GUILayout.Space(10f);
 
-                    GUILayout.Label("Selected Patch Owner: " + _modId.Color(_modIdsToColor[_modId]));
+                    GUILayout.Label("Selected Patch Owner: " + (string.IsNullOrEmpty(_modId) ? "All" : _modId.Color(_modIdsToColor[_modId])));
 
                     GUILayout.Space(10f);
 
-                    if (GUILayout.Button("Refresh Patch Info (All Mods)", _buttonStyle)) {
-                        RefreshPatchInfoOfAllMods(_modId);
+                    if (string.IsNullOrEmpty(_modId)) {
+                        if (GUILayout.Button("Refresh Patch Info (All Mods)", _buttonStyle)) {
+                            RefreshPatchInfoOfAllMods(_modId);
+                        }
                     }
+                    else {
+                        if (GUILayout.Button("Refresh Patch Info (Selected)", _buttonStyle)) {
+                            RefreshPatchInfoOfSelected(_modId);
+                        }
 
-                    if (GUILayout.Button("Refresh Patch Info (Selected)", _buttonStyle)) {
-                        RefreshPatchInfoOfSelected(_modId);
-                    }
-
-                    if (GUILayout.Button("Refresh Patch Info (Potential Conflict With ...)", _buttonStyle)) {
-                        RefreshPatchInfoOfPotentialConflict(_modId);
+                        if (GUILayout.Button("Refresh Patch Info (Potential Conflict With ...)", _buttonStyle)) {
+                            RefreshPatchInfoOfPotentialConflict(_modId);
+                        }
                     }
                 }
 
                 // display info
-                if (_modIdsToColor != null && !string.IsNullOrEmpty(_modId) && _patches != null) {
-                    if (GUILayout.Button("Clear Patch Info", _buttonStyle)) {
-                        _patches = null;
-                        return;
-                    }
+                if (_modIdsToColor != null && _patches != null) {
+                    //if (GUILayout.Button("Clear Patch Info", _buttonStyle)) {
+                    //    _patches = null;
+                    //    return;
+                    //}
 
                     foreach (KeyValuePair<MethodBase, List<Patch>> item in _patches) {
                         GUILayout.Space(10f);
-
                         using (new GUILayout.VerticalScope()) {
-                            GUILayout.Label(item.Key.DeclaringType.FullName + "." + item.Key.ToString(), _buttonStyle);
+                            var method = item.Key;
+                            string typeStr = method.DeclaringType.FullName;
+                            var methodComponents = method.ToString().Split();
+                            var returnTypeStr = methodComponents[0];
+                            var methodName = methodComponents[1];
+                            GUILayout.Label($"{typeStr.Grey().Italic()}\n{returnTypeStr.Bold()} {methodName.Bold()}");
 
                             using (new GUILayout.HorizontalScope()) {
                                 using (new GUILayout.VerticalScope()) {
@@ -119,7 +129,7 @@ namespace DataViewer.Menus {
                                 using (new GUILayout.VerticalScope()) {
                                     foreach (Patch patch in item.Value) {
 
-                                        GUILayout.Label(patch.PatchMethod.DeclaringType.DeclaringType?.Name, _buttonStyle);
+                                        GUILayout.Label(patch.PatchMethod.DeclaringType.DeclaringType?.Name ?? "---", _buttonStyle);
                                     }
                                 }
 
@@ -148,30 +158,29 @@ namespace DataViewer.Menus {
         private void RefreshListOfPatchOwners(string modId, bool reset = true) {
             if (reset || _modIdsToColor == null)
                 _modIdsToColor = new Dictionary<string, string>();
-
-            var rgbaValues = Enum.GetValues(typeof(RGBA));
-            var rgbaCount = rgbaValues.Length;
-
-            foreach (Patch patch in Harmony.GetAllPatchedMethods().SelectMany(method => {
-                Patches patches = Harmony.GetPatchInfo(method);
-                return patches.Prefixes.Concat(patches.Transpilers).Concat(patches.Postfixes);
-            })) {
-                if (!_modIdsToColor.ContainsKey(patch.owner)) {
-                    var rgbaIndex = Math.Abs(patch.owner.GetHashCode() % rgbaCount);
-                    RGBA color = (RGBA)rgbaValues.GetValue(rgbaIndex);
-                    var colorString = color.ToHtmlString();
-                    _modIdsToColor[patch.owner] = colorString;
-
-                    //_modIdsToColor[patch.owner] = ColorUtility.ToHtmlStringRGBA(UnityEngine.Random.ColorHSV(0f, 1f, 0.25f, 1f, 0.75f, 1f));
+            var patches = Harmony.GetAllPatchedMethods().SelectMany(method => {
+                Patches patchInfo = Harmony.GetPatchInfo(method);
+                return patchInfo.Prefixes.Concat(patchInfo.Transpilers).Concat(patchInfo.Postfixes);
+            });
+            var owners = patches.Select(patchInfo => patchInfo.owner).Distinct().OrderBy(owner => owner);
+            float hue = 0.0f;
+            foreach (var owner in owners) { 
+                if (!_modIdsToColor.ContainsKey(owner)) {
+                    var color = UnityEngine.Random.ColorHSV(
+                            hue, hue,
+                            0.25f, .75f,
+                            0.75f, 1f
+                            );
+                    _modIdsToColor[owner] = ColorUtility.ToHtmlStringRGBA(color);
+                    hue = (hue + 0.1f) % 1.0f;
                 }
             }
         }
 
         private void RefreshPatchInfoOfAllMods(string modId) {
             _patches = new Dictionary<MethodBase, List<Patch>>();
-            Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
-                _patches.Add(method, GetSortedPatches(harmonyInstance, method).ToList());
+                _patches.Add(method, GetSortedPatches(method).ToList());
             }
         }
 
@@ -180,7 +189,7 @@ namespace DataViewer.Menus {
             Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
                 IEnumerable<Patch> patches =
-                    GetSortedPatches(harmonyInstance, method).Where(patch => patch.owner == _modId);
+                    GetSortedPatches(method).Where(patch => patch.owner == _modId);
                 if (patches.Any()) {
                     _patches.Add(method, patches.ToList());
                 }
@@ -191,14 +200,14 @@ namespace DataViewer.Menus {
             _patches = new Dictionary<MethodBase, List<Patch>>();
             Harmony harmonyInstance = new Harmony(_modId);
             foreach (MethodBase method in Harmony.GetAllPatchedMethods()) {
-                IEnumerable<Patch> patches = GetSortedPatches(harmonyInstance, method);
+                IEnumerable<Patch> patches = GetSortedPatches(method);
                 if (patches.Any(patch => patch.owner == _modId) && patches.Any(patch => patch.owner != _modId)) {
                     _patches.Add(method, patches.ToList());
                 }
             }
         }
 
-        private IEnumerable<Patch> GetSortedPatches(Harmony harmonyInstance, MethodBase method) {
+        private IEnumerable<Patch> GetSortedPatches(MethodBase method) {
             Patches patches = Harmony.GetPatchInfo(method);
             return patches.Prefixes.OrderByDescending(patch => patch.priority)
                 .Concat(patches.Transpilers.OrderByDescending(patch => patch.priority))

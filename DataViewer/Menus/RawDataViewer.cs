@@ -1,5 +1,6 @@
 ﻿using DataViewer.Utility;
 using Kingmaker;
+using Kingmaker.Globalmap.View;
 using ModMaker;
 using ModMaker.Utility;
 using System;
@@ -30,7 +31,10 @@ namespace DataViewer.Menus
             { "Area", () => Game.Instance?.CurrentlyLoadedArea },
             { "UI", () => Game.Instance?.UI },
             { "Static Canvas", () => Game.Instance?.UI?.Canvas?.gameObject },
-            { "Global Map", () => Game.Instance?.Player?.GlobalMap },
+            { "GlobalMap", () => Game.Instance?.Player?.GlobalMap },
+            { "GlobalMapController", () => Game.Instance.GlobalMapController },
+            { "GlobalMapView", () => GlobalMapView.Instance },
+            { "GlobalMapUI", () => Game.Instance.UI.GlobalMapUI },
             { "Player", () => Game.Instance?.Player },
             { "Characters", () => Game.Instance?.Player?.AllCharacters },
             { "Inventory", () => Game.Instance?.Player?.Inventory },

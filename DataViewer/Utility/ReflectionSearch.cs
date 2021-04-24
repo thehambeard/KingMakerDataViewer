@@ -202,7 +202,7 @@ namespace DataViewer.Utility.ReflectionTree {
                     newTodo = new List<Node> { };
                 }
             }
-            if (newTodo.Count > 0) 
+            if (newTodo.Count > 0 && depth < 40) 
                 yield return Search(searchText, newTodo, depth + 1, visitCount, sequenceNumber, updator, resultRoot);
         }
     }
