@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEngine;
 using static ModMaker.Utility.ReflectionCache;
 using ToggleState = ModMaker.Utility.ToggleState;
@@ -42,7 +43,7 @@ namespace DataViewer.Utility.ReflectionTree {
 
     public abstract class Node {
         // this allows us to avoid duplicated nodes for the same value
-        public static ConditionalWeakTable<object, Node> ValueToNodeLookup = new ConditionalWeakTable<object, Node>();
+        //public static ConditionalWeakTable<object, Node> ValueToNodeLookup = new ConditionalWeakTable<object, Node>();
 
         protected const BindingFlags ALL_FLAGS = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -114,6 +115,19 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract IReadOnlyCollection<Node> GetPropertyNodes();
         public abstract IReadOnlyCollection<Node> GetFieldNodes();
         public abstract Node GetParent();
+        private void AppendPathFromRoot(StringBuilder sb) {
+            var parent = GetParent();
+            if (parent != null) {
+                parent.AppendPathFromRoot(sb);
+                sb.Append(".");
+            }
+            sb.Append(this.Name);
+        }
+        public String GetPath() {
+            var sb = new StringBuilder();
+            AppendPathFromRoot(sb);
+            return sb.ToString();
+        }
         public abstract void SetDirty();
         public abstract bool IsDirty();
         internal abstract void SetValue(object value);
@@ -249,12 +263,12 @@ namespace DataViewer.Utility.ReflectionTree {
         }
         private Node FindOrCreateChildForValue(object item, Type type, params object[] childArgs) {
             Node node = null;
-            if (item != null) 
-                ValueToNodeLookup.TryGetValue(item, out node);
+            //if (item != null)
+            //    ValueToNodeLookup.TryGetValue(item, out node);
             if (node == null) {
                 node = (Activator.CreateInstance(type, ALL_FLAGS, null, childArgs, null) as Node);
-                if (item != null) 
-                    ValueToNodeLookup.Add(item, node);
+                //if (item != null) 
+                //    ValueToNodeLookup.Add(item, node);
             }
             return node;
         }

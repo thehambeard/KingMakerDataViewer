@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static ModMaker.Utility.StringExtensions;
-using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
+using ModMaker;
 
 namespace DataViewer.Utility {
     public class ReflectionTreeView {
@@ -58,7 +58,7 @@ namespace DataViewer.Utility {
                 _tree = new ReflectionTree.ReflectionTree(root);
             _searchResults.Node = null;
             _tree.RootNode.Expanded = ToggleState.On;
-            NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
+            ReflectionSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
         }
 
         public void OnGUI(bool drawRoot = true, bool collapse = false) {
@@ -99,8 +99,8 @@ namespace DataViewer.Utility {
                     if (GUILayout.Button("Refresh", GUILayout.ExpandWidth(false)))
                         _tree.RootNode.SetDirty();
                     GUILayout.Space(10f);
-                    GUIHelper.AdjusterButton(ref _skipLevels, "Skip Levels:", 0);
-                    GUILayout.Space(10f);
+                    //GUIHelper.AdjusterButton(ref _skipLevels, "Skip Levels:", 0);
+                    //GUILayout.Space(10f);
                     Main.settings.maxRows = GUIHelper.AdjusterButton(Main.settings.maxRows, "Max Rows:", 10);
                     GUILayout.Space(10f);
 #if false
@@ -111,14 +111,24 @@ namespace DataViewer.Utility {
 #endif
                     GUILayout.Label($"Scroll: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
                     GUILayout.Space(10f);
-                    GUILayout.Label("Search", GUILayout.ExpandWidth(false));
-                    GUIHelper.TextField(ref searchText, () => {
+                    UI.ActionTextField(ref searchText, "searhText", (text) => { }, () => {
                         searchText = searchText.Trim();
-                        NodeSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
-                    }, null, GUILayout.Width(250));
+                        ReflectionSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
+                    }, UI.Width(250));
                     GUILayout.Space(10f);
-                    if (GUILayout.Button("Stop", GUILayout.ExpandWidth(false))) {
-                        NodeSearch.Shared.Stop();
+                    bool isSearching = ReflectionSearch.Shared.isSearching;
+                    UI.ActionButton(isSearching ? "Stop" : "Search", () => {
+                        if (isSearching) {
+                            ReflectionSearch.Shared.Stop();
+                        }
+                        else {
+                            searchText = searchText.Trim();
+                            ReflectionSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
+                        }
+                    }, UI.AutoWidth());
+                    GUILayout.Space(10f);
+                    if (GUIHelper.AdjusterButton(ref Main.settings.maxSearchDepth, "Max Depth:", 0)) {
+                        ReflectionSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
                     }
                     GUILayout.Space(10f);
                     if (visitCount > 0) {
@@ -140,8 +150,10 @@ namespace DataViewer.Utility {
                                             toggleState = ToggleState.None;
                                         else if (node.ToggleState == ToggleState.None)
                                             toggleState = ToggleState.Off;
-                                        if (node.Node.NodeType == NodeType.Root)
+                                        if (node.Node.NodeType == NodeType.Root) {
+                                            if (node.matches.Count == 0) return false;
                                             GUILayout.Label("Search Results".Cyan().Bold());
+                                        }
                                         else
                                             DrawNodePrivate(node.Node, depth, ref toggleState);
                                         if (node.ToggleState != toggleState) { Main.Log(node.ToString()); }
@@ -187,8 +199,8 @@ namespace DataViewer.Utility {
                     var instText = "";  // if (node.InstanceID is int instID) instText = "@" + instID.ToString();
                     name = name.MarkedSubstring(searchText);
                     GUIHelper.ToggleButton(ref expanded,
-                        $"[{node.NodeTypePrefix}] ".Color(RGBA.grey) +
-                        name + " : " + node.Type.Name.Color(
+                        $"[{node.NodeTypePrefix}] ".color(RGBA.grey) +
+                        name + " : " + node.Type.Name.color(
                             node.IsBaseType ? RGBA.grey :
                             node.IsGameObject ? RGBA.magenta :
                             node.IsEnumerable ? RGBA.cyan : RGBA.orange)
@@ -198,12 +210,12 @@ namespace DataViewer.Utility {
                     // value
                     Color originalColor = GUI.contentColor;
                     GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
-                    GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText), _valueStyle);
+                    GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText) + " " + node.GetPath().green(), _valueStyle);
                     GUI.contentColor = originalColor;
 
                     // instance type
                     if (node.InstType != null && node.InstType != node.Type)
-                        GUILayout.Label(node.InstType.Name.Color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
+                        GUILayout.Label(node.InstType.Name.color(RGBA.yellow), _buttonStyle, GUILayout.ExpandWidth(false));
                 }
             }
         }
@@ -232,10 +244,24 @@ namespace DataViewer.Utility {
             if (hoist == null) hoist = (n) => n.Matches;
             var toHoist = new List<Node>();
             var others = new List<Node>();
-            foreach (var child in node.GetItemNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
-            foreach (var child in node.GetComponentNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
-            foreach (var child in node.GetPropertyNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
-            foreach (var child in node.GetFieldNodes()) { if (hoist(child)) toHoist.Add(child); else others.Add(child); }
+            var nodesCount = _nodesCount;
+            var maxNodeCount = _startIndex + MaxRows;
+            foreach (var child in node.GetItemNodes()) {
+                if (nodesCount > maxNodeCount) break; nodesCount++;
+                if (hoist(child)) toHoist.Add(child); else others.Add(child);
+            }
+            foreach (var child in node.GetComponentNodes()) {
+                if (nodesCount > maxNodeCount) break; nodesCount++;
+                if (hoist(child)) toHoist.Add(child); else others.Add(child);
+            }
+            foreach (var child in node.GetPropertyNodes()) {
+                if (nodesCount > maxNodeCount) break; nodesCount++;
+                if (hoist(child)) toHoist.Add(child); else others.Add(child);
+            }
+            foreach (var child in node.GetFieldNodes()) {
+                if (nodesCount > maxNodeCount) break; nodesCount++;
+                if (hoist(child)) toHoist.Add(child); else others.Add(child);
+            }
             foreach (var child in toHoist) { DrawNode(child, depth, collapse); }
             foreach (var child in others) { DrawNode(child, depth, collapse); }
         }

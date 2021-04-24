@@ -105,7 +105,7 @@ namespace DataViewer.Menus {
                             var methodComponents = method.ToString().Split();
                             var returnTypeStr = methodComponents[0];
                             var methodName = methodComponents[1];
-                            GUILayout.Label($"{typeStr.Grey().Italic()}\n{returnTypeStr.Bold()} {methodName.Bold()}");
+                            GUILayout.Label($"{typeStr.Grey().Italic()}\n{returnTypeStr.Grey().Bold()} {methodName.Bold()}");
 
                             using (new GUILayout.HorizontalScope()) {
                                 using (new GUILayout.VerticalScope()) {

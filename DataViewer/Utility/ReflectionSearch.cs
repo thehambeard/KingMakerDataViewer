@@ -66,18 +66,18 @@ namespace DataViewer.Utility.ReflectionTree {
      *      foreach Node in Tree, this.matches.Clear()
      *      
      */
-    public partial class NodeSearch : MonoBehaviour {
+    public partial class ReflectionSearch : MonoBehaviour {
         public delegate void SearchProgress(int visitCount, int depth, int breadth);
-
+        public bool isSearching { get { return searchCoroutine != null;  } }
         private static HashSet<int> VisitedInstanceIDs = new HashSet<int> { };
         public static int SequenceNumber = 0;
         private IEnumerator searchCoroutine;
-        private static NodeSearch _shared;
+        private static ReflectionSearch _shared;
 
-        public static NodeSearch Shared {
+        public static ReflectionSearch Shared {
             get {
                 if (_shared == null) {
-                    _shared = new GameObject().AddComponent<NodeSearch>();
+                    _shared = new GameObject().AddComponent<ReflectionSearch>();
                     UnityEngine.Object.DontDestroyOnLoad(_shared.gameObject);
                 }
                 return _shared;
@@ -102,7 +102,7 @@ namespace DataViewer.Utility.ReflectionTree {
             else {
                 var todo = new List<Node> { node };
                 searchCoroutine = Search(searchText, todo , 0, 0, SequenceNumber, updator, resultRoot);
-                StartCoroutine(searchCoroutine);
+                StartCoroutine(searchCoroutine);                
             }
         }
         public void Stop() {
@@ -116,7 +116,7 @@ namespace DataViewer.Utility.ReflectionTree {
             yield return null;
             if (sequenceNumber != SequenceNumber) yield return null;
             var todoText = todo.Count > 0 ? todo.First().Name : "n/a";
-            Main.Log(depth, $"seq: {sequenceNumber} depth: {depth} - count: {todo.Count} - todo[0]: {todoText}");
+            //Main.Log(depth, $"seq: {sequenceNumber} depth: {depth} - count: {todo.Count} - todo[0]: {todoText}");
             var newTodo = new List<Node> { };
             var breadth = todo.Count();
             foreach (var node in todo) {
@@ -131,14 +131,14 @@ namespace DataViewer.Utility.ReflectionTree {
                     }
                 }
                 visitCount++;
-                //                Main.Log(depth, $"node: {node.Name}");
+                //Main.Log(depth, $"node: {node.Name} - {node.GetPath()}");
                 try {
                     if (Matches(node.Name, searchText) || Matches(node.ValueText, searchText)) {
                         foundMatch = true;
                         updator(visitCount, depth, breadth);
                         resultRoot.AddSearchResult(node);
-                        Main.Log(depth, $"matched: {node.Name} - id: {node.InstanceID}- {node.ValueText}");
-                        //Main.Log($"{resultRoot.ToString()}");
+                        Main.Log(depth, $"matched: {node.GetPath()} - {node.ValueText}");
+                        Main.Log($"{resultRoot.ToString()}");
                     }
                 }
                 catch (Exception e) {
@@ -196,14 +196,12 @@ namespace DataViewer.Utility.ReflectionTree {
                         Main.Log(depth, $"caught - {e}");
                     }
                 }
-                //if (visitCount % 1000 == 0) yield return null;
-                if (visitCount % 1000 == 0) {
-                    yield return Search(searchText, newTodo, depth, visitCount, sequenceNumber, updator, resultRoot);
-                    newTodo = new List<Node> { };
-                }
+                if (visitCount % 1000 == 0) yield return null;
             }
-            if (newTodo.Count > 0 && depth < 40) 
+            if (newTodo.Count > 0 && depth < Main.settings.maxSearchDepth)
                 yield return Search(searchText, newTodo, depth + 1, visitCount, sequenceNumber, updator, resultRoot);
+            else
+                Stop();
         }
     }
 }

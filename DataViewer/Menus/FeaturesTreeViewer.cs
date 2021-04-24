@@ -13,7 +13,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using static ModMaker.Utility.RichTextExtensions;
 using ToggleState = ModMaker.Utility.ToggleState;
 
 namespace DataViewer.Menus {
@@ -33,7 +32,7 @@ namespace DataViewer.Menus {
 
             string activeScene = SceneManager.GetActiveScene().name;
             if (Game.Instance?.Player == null || activeScene == "MainMenu" || activeScene == "Start") {
-                GUILayout.Label(" * Please start or load the game first.".Color(RGBA.yellow));
+                GUILayout.Label(" * Please start or load the game first.".color(RGBA.yellow));
                 return;
             }
             if (_buttonStyle == null)
@@ -89,7 +88,7 @@ namespace DataViewer.Menus {
 
                             void draw(FeaturesTree.FeatureNode node) {
                                 using (new GUILayout.HorizontalScope()) {
-                                    var titleText = node.Name.Bold() + ("\n      [" + node.Blueprint.name + "]").Color(node.IsMissing ? RGBA.maroon : RGBA.aqua);
+                                    var titleText = node.Name.Bold() + ("\n      [" + node.Blueprint.name + "]").color(node.IsMissing ? RGBA.maroon : RGBA.aqua);
                                     if (node.ChildNodes.Count > 0) {
                                         if (node.Expanded == ToggleState.None) {
                                             node.Expanded = ToggleState.Off;
