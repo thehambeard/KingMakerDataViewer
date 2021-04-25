@@ -1,4 +1,4 @@
-﻿using ModMaker.Utility;
+﻿using ModKit.Utility;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,10 +9,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using static ModMaker.Utility.ReflectionCache;
-using static ModMaker.Utility.StringExtensions;
-using static ModMaker.Utility.RichTextExtensions;
-using ToggleState = ModMaker.Utility.ToggleState;
+using static ModKit.Utility.ReflectionCache;
+using static ModKit.Utility.StringExtensions;
+using static ModKit.Utility.RichTextExtensions;
+using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree {
 

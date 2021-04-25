@@ -4,8 +4,8 @@ using Kingmaker.Blueprints.Classes;
 using Kingmaker.Blueprints.Classes.Selection;
 using Kingmaker.EntitySystem.Entities;
 using Kingmaker.UnitLogic;
-using ModMaker;
-using ModMaker.Utility;
+using ModKit;
+using ModKit.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using ToggleState = ModMaker.Utility.ToggleState;
+using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Menus {
     public class FeaturesTreeViewer : IMenuSelectablePage {

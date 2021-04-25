@@ -1,8 +1,8 @@
 ﻿using DataViewer.Utility;
 using Kingmaker;
 using Kingmaker.Globalmap.View;
-using ModMaker;
-using ModMaker.Utility;
+using ModKit;
+using ModKit.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;

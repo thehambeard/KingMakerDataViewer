@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
-using ModMaker;
-using ModMaker.Utility;
+using ModKit;
+using ModKit.Utility;
 using System.Reflection;
 using System.Collections.Generic;
 using System.ComponentModel;

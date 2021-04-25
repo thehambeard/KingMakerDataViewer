@@ -1,13 +1,13 @@
 ﻿using Kingmaker;
 using DataViewer.Utility.ReflectionTree;
-using ModMaker.Utility;
+using ModKit.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static ModMaker.Utility.StringExtensions;
-using ToggleState = ModMaker.Utility.ToggleState;
-using ModMaker;
+using static ModKit.Utility.StringExtensions;
+using ToggleState = ModKit.Utility.ToggleState;
+using ModKit;
 
 namespace DataViewer.Utility {
     public class ReflectionTreeView {

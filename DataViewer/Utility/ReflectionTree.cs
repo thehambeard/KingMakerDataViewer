@@ -6,8 +6,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
-using static ModMaker.Utility.ReflectionCache;
-using ToggleState = ModMaker.Utility.ToggleState;
+using static ModKit.Utility.ReflectionCache;
+using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree {
     public enum NodeType {

@@ -2,8 +2,8 @@
 using DataViewer.Utility.ReflectionTree;
 using Kingmaker.Blueprints;
 using HarmonyLib;
-using ModMaker;
-using ModMaker.Utility;
+using ModKit;
+using ModKit.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using ToggleState = ModMaker.Utility.ToggleState;
+using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Menus {
     public class BlueprintViewer : IMenuSelectablePage {
