@@ -17,7 +17,7 @@ namespace DataViewer.Utility {
         private bool _mouseOver;
         private GUIStyle _buttonStyle;
         private GUIStyle _valueStyle;
-
+        private int _totalNodeCount;
         private int _nodesCount;
         private int _startIndex;
         private int _skipLevels;
@@ -73,6 +73,7 @@ namespace DataViewer.Utility {
 
             // mouse wheel & fix scroll position
             if (Event.current.type == EventType.Layout) {
+                _totalNodeCount = _tree.RootNode.ChildrenCount;
                 if (startIndexUBound > 0) {
                     if (_mouseOver) {
                         var delta = Input.mouseScrollDelta;
@@ -109,7 +110,7 @@ namespace DataViewer.Utility {
 
                     GUILayout.Space(10f);
 #endif
-                    GUILayout.Label($"Scroll: {_startIndex} / {startIndexUBound}", GUILayout.ExpandWidth(false));
+                    GUILayout.Label($"Scroll: {_startIndex} / {_totalNodeCount}", GUILayout.ExpandWidth(false));
                     GUILayout.Space(10f);
                     UI.ActionTextField(ref searchText, "searhText", (text) => { }, () => {
                         searchText = searchText.Trim();
@@ -172,7 +173,7 @@ namespace DataViewer.Utility {
 
                             // scrollbar
                             //                            if (startIndexUBound > 0)
-                            _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, _nodesCount, GUILayout.ExpandHeight(true));
+                            _startIndex = (int)GUILayout.VerticalScrollbar(_startIndex, MaxRows, 0f, Math.Max(MaxRows, _totalNodeCount), GUILayout.ExpandHeight(true));
                         }
 
                         // cache height
@@ -210,7 +211,7 @@ namespace DataViewer.Utility {
                     // value
                     Color originalColor = GUI.contentColor;
                     GUI.contentColor = node.IsException ? Color.red : node.IsNull ? Color.grey : originalColor;
-                    GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText) + " " + node.GetPath().green(), _valueStyle);
+                    GUILayout.TextArea(node.ValueText.MarkedSubstring(searchText)); // + " " + node.GetPath().green(), _valueStyle);
                     GUI.contentColor = originalColor;
 
                     // instance type

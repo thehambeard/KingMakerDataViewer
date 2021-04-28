@@ -75,10 +75,37 @@ namespace DataViewer.Utility.ReflectionTree {
                 }
             }
         }
+        public int ExpandedNodeCount {
+            get {
+                int count = 1;
+                if (IsBaseType) return count;
+                if (this.Expanded == ToggleState.On) {
+                    foreach (var child in GetItemNodes()) {
+                        count += child.ExpandedNodeCount;
+                    }
+                    foreach (var child in GetComponentNodes()) {
+                        count += child.ExpandedNodeCount;
+                    }
+                    foreach (var child in GetPropertyNodes()) {
+                        count += child.ExpandedNodeCount;
+                    }
+                    foreach (var child in GetFieldNodes()) {
+                        count += child.ExpandedNodeCount;
+                    }
+                }
+                return Count;
+            }
+        }
+        public int ChildrenCount {
+            get {
+                if (IsBaseType) return 0;
+                return GetItemNodes().Count + GetComponentNodes().Count + GetFieldNodes().Count + GetPropertyNodes().Count;
+            }
+        }
         public bool hasChildren {
             get {
                 if (IsBaseType) return false;
-                return GetItemNodes().Count > 0 || GetComponentNodes().Count > 0 || GetFieldNodes().Count > 0 || GetPropertyNodes().Count > 0;
+                return ChildrenCount > 0;
             }
         }
         public string Name { get; protected set; }

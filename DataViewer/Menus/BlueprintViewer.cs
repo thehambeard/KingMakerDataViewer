@@ -15,9 +15,26 @@ using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Menus {
     public class BlueprintViewer : IMenuSelectablePage {
-        private static IEnumerable<BlueprintScriptableObject> _allBlueprints = null;
-        public static IEnumerable<BlueprintScriptableObject> GetBlueprints() {
+        private static IEnumerable<SimpleBlueprint> _allBlueprints = null;
+        public static IEnumerable<SimpleBlueprint> GetBlueprints() {
             if (_allBlueprints == null) {
+#if true
+                var bpCache = ResourcesLibrary.BlueprintsCache;
+                if (bpCache == null) return null;
+                var blueprints = new List<SimpleBlueprint> { };
+                var toc = ResourcesLibrary.BlueprintsCache.m_LoadedBlueprints;
+                if (toc != null) {
+                    var allGUIDs = new List<String> { };
+                    foreach (var key in toc.Keys) {
+                        allGUIDs.Add(key);
+                    }
+                    foreach (var guid in allGUIDs) {
+                        var bp = bpCache.Load(guid);
+                        blueprints.Add(bp);
+                    }
+                    _allBlueprints = blueprints;
+                }
+#else
                 if (BlueprintLoader.LoadInProgress()) { return null; }
                 else {
                     Main.Log($"calling BlueprintLoader.Load");
@@ -27,14 +44,15 @@ namespace DataViewer.Menus {
                     });
                     return null;
                 }
+#endif
             }
-            return _allBlueprints;
+                return _allBlueprints;
         }
 
         // blueprint info
         private Type[] _bpTypes;
         private string[] _bpTypeNames;
-        private static IEnumerable<BlueprintScriptableObject> _filteredBPs = null;
+        private static IEnumerable<SimpleBlueprint> _filteredBPs = null;
 
         // tree view
         private ReflectionTreeView _treeView = new ReflectionTreeView();
