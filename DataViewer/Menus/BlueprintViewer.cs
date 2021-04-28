@@ -18,35 +18,17 @@ namespace DataViewer.Menus {
         private static IEnumerable<SimpleBlueprint> _allBlueprints = null;
         public static IEnumerable<SimpleBlueprint> GetBlueprints() {
             if (_allBlueprints == null) {
-#if true
-                var bpCache = ResourcesLibrary.BlueprintsCache;
-                if (bpCache == null) return null;
-                var blueprints = new List<SimpleBlueprint> { };
-                var toc = ResourcesLibrary.BlueprintsCache.m_LoadedBlueprints;
-                if (toc != null) {
-                    var allGUIDs = new List<String> { };
-                    foreach (var key in toc.Keys) {
-                        allGUIDs.Add(key);
-                    }
-                    foreach (var guid in allGUIDs) {
-                        var bp = bpCache.Load(guid);
-                        blueprints.Add(bp);
-                    }
-                    _allBlueprints = blueprints;
-                }
-#else
-                if (BlueprintLoader.LoadInProgress()) { return null; }
+                if (BlueprintLoader.Shared.LoadInProgress()) { return null; }
                 else {
                     Main.Log($"calling BlueprintLoader.Load");
-                    BlueprintLoader.Load((bps) => {
+                    BlueprintLoader.Shared.Load((bps) => {
                         _allBlueprints = bps;
                         Main.Log($"success got {bps.Count()} bluerints");
                     });
                     return null;
                 }
-#endif
             }
-                return _allBlueprints;
+            return _allBlueprints;
         }
 
         // blueprint info
@@ -140,7 +122,7 @@ namespace DataViewer.Menus {
                     // refresh blueprint types
                     if (_bpTypeNames == null) {
                         if (GetBlueprints() == null) {
-                            GUILayout.Label("Blueprints".Orange().Bold() + " loading: " + BlueprintLoader.progress.ToString("P2").Cyan().Bold());
+                            GUILayout.Label("Blueprints".Orange().Bold() + " loading: " + BlueprintLoader.Shared.progress.ToString("P2").Cyan().Bold());
                             return;
                         }
                         RefreshTypeNames();
