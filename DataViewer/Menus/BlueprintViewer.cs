@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
 using ToggleState = ModKit.Utility.ToggleState;
+using Kingmaker.Utility;
 
 namespace DataViewer.Menus {
     public class BlueprintViewer : IMenuSelectablePage {
@@ -67,6 +68,11 @@ namespace DataViewer.Menus {
         public string Name => "Blueprints";
         public int Priority => 100;
         public void RefreshBPSearchData() {
+            _filteredBPs = GetBlueprints();
+            if (_filteredBPs != null)
+                _treeView.SetRoot(_filteredBPs);
+            else
+                _treeView.Clear();
             _bpFields = Node.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
             _bpProperties = Node.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
             _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).OrderBy(key => key).ToArray();
@@ -75,20 +81,14 @@ namespace DataViewer.Menus {
     public void RefreshTypeNames() {
             _bpTypes = new Type[] { null }.Concat(GetBlueprints()
     .Select(bp => bp.GetType()).Distinct().OrderBy(type => type.Name)).ToArray();
-            if (_selectionSearchText != null && _selectionSearchText.Length > 0) {
-                var searchTextLower = _selectionSearchText.ToLower();
-                _bpTypes = _bpTypes.Where(type => type?.FullName.ToLower().Contains(searchTextLower) ?? false).ToArray();
+            if (!_selectionSearchText.IsNullOrEmpty()) {
+                Main.Log($"search: {_selectionSearchText}");
+                _bpTypes = _bpTypes.Where(type => type == null ? true : StringExtensions.Matches(type.Name, _selectionSearchText)).ToArray();
             }
             _bpTypeNames = _bpTypes.Select(type => type?.Name).ToArray();
             _bpTypeNames[0] = "All";
             _bpTypes[0] = typeof(BlueprintScriptableObject);
             _bpTypeIndex = 0;
-            _filteredBPs = GetBlueprints();
-            if (_filteredBPs != null)
-                _treeView.SetRoot(_filteredBPs);
-            else
-                _treeView.Clear();
-            RefreshBPSearchData();
         }
         public void UpdateSearchResults() {
             if (string.IsNullOrEmpty(_searchText)) {
@@ -126,23 +126,23 @@ namespace DataViewer.Menus {
                             return;
                         }
                         RefreshTypeNames();
+                        RefreshBPSearchData();
                     }
                     using (new GUILayout.HorizontalScope()) {
                         bool isDirty = false;
                         // Blueprint Picker
                         using (new GUILayout.VerticalScope()) {
                             // Header and Search Field
+                            bool blueprintListIsDirty = false;
                             GUIHelper.Div();
                             using (new GUILayout.HorizontalScope(GUILayout.Width(450))) {
                                 // Header and Search Field
                                 GUILayout.Label($"{_bpTypeNames[_bpTypeIndex]}".Cyan(), GUILayout.Width(300));
 
                                 GUILayout.Space(10);
-                                GUIHelper.TextField(ref _selectionSearchText, () => isDirty = true, null, GUILayout.Width(150));
-                                if (isDirty) {
-                                    RefreshTypeNames();
-                                }
+                                GUIHelper.TextField(ref _selectionSearchText, () => blueprintListIsDirty = true, null, GUILayout.MinWidth(150));
                             }
+                            if (blueprintListIsDirty) RefreshTypeNames();
                             GUIHelper.Div();
                             // Blueprint Picker List
                             if (_bpsExpanded.IsOn()) {

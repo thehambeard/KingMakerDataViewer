@@ -264,7 +264,7 @@
   <ItemGroup>
     <Content Include="ChangeLog.txt" />
   </ItemGroup>
-  <Import Project="..\packages\ModKit.1.0.3\ModKitSrc.projitems" Label="Shared" />
+  <Import Project="..\..\ToyBox\ModKit\ModKitSrc.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>echo "$(TargetPath)" "&gt;C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure Demo\Mods\$(ProjectName)\$(ProjectName).dll*"
