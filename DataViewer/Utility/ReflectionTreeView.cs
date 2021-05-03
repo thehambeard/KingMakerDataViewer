@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static ModKit.Utility.StringExtensions;
-using ToggleState = ModKit.Utility.ToggleState;
 using ModKit;
 
 namespace DataViewer.Utility {
@@ -199,7 +198,7 @@ namespace DataViewer.Utility {
                     var name = node.Name;
                     var instText = "";  // if (node.InstanceID is int instID) instText = "@" + instID.ToString();
                     name = name.MarkedSubstring(searchText);
-                    GUIHelper.ToggleButton(ref expanded,
+                    UI.ToggleButton(ref expanded,
                         $"[{node.NodeTypePrefix}] ".color(RGBA.grey) +
                         name + " : " + node.Type.Name.color(
                             node.IsBaseType ? RGBA.grey :
@@ -246,7 +245,7 @@ namespace DataViewer.Utility {
             var toHoist = new List<Node>();
             var others = new List<Node>();
             var nodesCount = _nodesCount;
-            var maxNodeCount = _startIndex + MaxRows;
+            var maxNodeCount = _startIndex + MaxRows * 2;
             foreach (var child in node.GetItemNodes()) {
                 if (nodesCount > maxNodeCount) break; nodesCount++;
                 if (hoist(child)) toHoist.Add(child); else others.Add(child);
@@ -265,6 +264,7 @@ namespace DataViewer.Utility {
             }
             foreach (var child in toHoist) { DrawNode(child, depth, collapse); }
             foreach (var child in others) { DrawNode(child, depth, collapse); }
+            _totalNodeCount = Math.Max(_nodesCount, _totalNodeCount);
         }
     }
 }

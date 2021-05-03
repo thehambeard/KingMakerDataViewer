@@ -1,7 +1,6 @@
 ﻿using DataViewer.Utility;
 using DataViewer.Utility.ReflectionTree;
 using Kingmaker.Blueprints;
-using HarmonyLib;
 using ModKit;
 using ModKit.Utility;
 using System;
@@ -11,7 +10,6 @@ using System.Reflection;
 using UnityEngine;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using ToggleState = ModKit.Utility.ToggleState;
 using Kingmaker.Utility;
 
 namespace DataViewer.Menus {
@@ -174,7 +172,7 @@ namespace DataViewer.Menus {
 
                                         // slelection - button
                                         using (new GUILayout.HorizontalScope()) {
-                                            GUIHelper.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
+                                            UI.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
 
                                         // _searchText input
                                         GUILayout.Space(10);

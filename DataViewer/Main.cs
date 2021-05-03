@@ -15,8 +15,6 @@ namespace DataViewer
     [EnableReloading]
 #endif
     static class Main {
-        static Harmony HarmonyInstance;
-
         public static ModManager<Core, Settings> Mod;
         public static Settings settings { get { return Mod.Settings; } }
         public static bool IsInGame { get { return Game.Instance.Player.Party.Any(); } }
@@ -39,10 +37,6 @@ namespace DataViewer
 #if (DEBUG)
             modEntry.OnUnload = Unload;
             Main.modEntry = modEntry;
-
-            HarmonyInstance = new Harmony(modEntry.Info.Id);
-            HarmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
-
             return true;
         }
 

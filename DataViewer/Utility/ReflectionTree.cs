@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ModKit;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 using static ModKit.Utility.ReflectionCache;
-using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Utility.ReflectionTree {
     public enum NodeType {

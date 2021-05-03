@@ -13,7 +13,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityModManagerNet;
 using static DataViewer.Main;
-using ToggleState = ModKit.Utility.ToggleState;
 
 namespace DataViewer.Menus {
     public class FeaturesTreeViewer : IMenuSelectablePage {
@@ -99,7 +98,7 @@ namespace DataViewer.Menus {
                                         node.Expanded = ToggleState.None;
                                     }
                                     Main.Log($"{node.Expanded} {titleText}");
-                                    GUIHelper.ToggleButton(ref node.Expanded, titleText, _buttonStyle);
+                                    UI.ToggleButton(ref node.Expanded, titleText, _buttonStyle);
                                     if (node.Expanded.IsOn()) {
                                         using (new GUILayout.VerticalScope(GUILayout.ExpandWidth(false))) {
                                             foreach (var child in node.ChildNodes)
