@@ -87,7 +87,7 @@ namespace DataViewer.Menus {
 
                             void draw(FeaturesTree.FeatureNode node) {
                                 using (new GUILayout.HorizontalScope()) {
-                                    var titleText = node.Name.Bold() + ("\n      [" + node.Blueprint.name + "]").color(node.IsMissing ? RGBA.maroon : RGBA.aqua);
+                                    var titleText = node.Name.Bold() + (" [" + node.Blueprint.name + "]  ").color(node.IsMissing ? RGBA.maroon : RGBA.aqua);
                                     if (node.ChildNodes.Count > 0) {
                                         if (node.Expanded == ToggleState.None) {
                                             node.Expanded = ToggleState.Off;

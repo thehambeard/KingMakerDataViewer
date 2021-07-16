@@ -81,7 +81,7 @@ namespace DataViewer.Menus {
                 yield return null;
                 toc = ResourcesLibrary.BlueprintsCache.m_LoadedBlueprints;
             }
-            var allGUIDs = new List<String> { };
+            var allGUIDs = new List<BlueprintGuid> { };
             foreach (var key in toc.Keys) {
                 allGUIDs.Add(key);
             }
