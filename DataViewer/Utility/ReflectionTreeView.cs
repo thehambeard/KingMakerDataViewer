@@ -101,7 +101,7 @@ namespace DataViewer.Utility {
                     GUILayout.Space(10f);
                     //GUIHelper.AdjusterButton(ref _skipLevels, "Skip Levels:", 0);
                     //GUILayout.Space(10f);
-                    Main.settings.maxRows = GUIHelper.AdjusterButton(Main.settings.maxRows, "Max Rows:", 10);
+                    UI.ValueAdjuster("Max Rows:", ref Main.settings.maxRows);
                     GUILayout.Space(10f);
 #if false
                     GUILayout.Label("Title Width:", GUILayout.ExpandWidth(false));
@@ -127,7 +127,7 @@ namespace DataViewer.Utility {
                         }
                     }, UI.AutoWidth());
                     GUILayout.Space(10f);
-                    if (GUIHelper.AdjusterButton(ref Main.settings.maxSearchDepth, "Max Depth:", 0)) {
+                    if (UI.ValueAdjuster("Max Depth:", ref Main.settings.maxSearchDepth)) {
                         ReflectionSearch.Shared.StartSearch(_tree.RootNode, searchText, updateCounts, _searchResults);
                     }
                     GUILayout.Space(10f);

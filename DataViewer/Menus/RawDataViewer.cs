@@ -75,7 +75,7 @@ namespace DataViewer.Menus
                     ResetTree();
 
                 // target selection
-                GUIHelper.SelectionGrid(ref Main.settings.selectedRawDataType, _targetNames, 5, () => {
+                UI.ActionSelectionGrid(ref Main.settings.selectedRawDataType, _targetNames, 5, (s) => {
                     ResetTree();
                 });
 

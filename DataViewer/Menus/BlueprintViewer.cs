@@ -131,24 +131,24 @@ namespace DataViewer.Menus {
                         using (new GUILayout.VerticalScope()) {
                             // Header and Search Field
                             bool blueprintListIsDirty = false;
-                            GUIHelper.Div();
+                            UI.Div();
                             using (new GUILayout.HorizontalScope(GUILayout.Width(450))) {
                                 // Header and Search Field
                                 GUILayout.Label($"{_bpTypeNames[_bpTypeIndex]}".Cyan(), GUILayout.Width(300));
 
                                 GUILayout.Space(10);
-                                GUIHelper.TextField(ref _selectionSearchText, () => blueprintListIsDirty = true, null, GUILayout.MinWidth(150));
+                                UI.ActionTextField(ref _selectionSearchText, "", (s) => blueprintListIsDirty = true, GUILayout.MinWidth(150));
                             }
                             if (blueprintListIsDirty) RefreshTypeNames();
-                            GUIHelper.Div();
+                            UI.Div();
                             // Blueprint Picker List
                             if (_bpsExpanded.IsOn()) {
                                 using (var scrollView = new GUILayout.ScrollViewScope(_bpsScrollPosition, GUILayout.Width(450))) {
                                     _bpsScrollPosition = scrollView.scrollPosition;
-                                    GUIHelper.SelectionGrid(ref _bpTypeIndex, _bpTypeNames, 1, () => {
+                                    UI.ActionSelectionGrid(ref _bpTypeIndex, _bpTypeNames, 1, (typeIndex) => {
                                         _searchText = null;
                                         RefreshBPSearchData();
-                                        _filteredBPs = _bpTypeIndex == 0 ? GetBlueprints() : GetBlueprints().Where(item => item.GetType() == _bpTypes[_bpTypeIndex]).ToList();
+                                        _filteredBPs = typeIndex == 0 ? GetBlueprints() : GetBlueprints().Where(item => item.GetType() == _bpTypes[typeIndex]).ToList();
                                         ;
                                         _treeView.SetRoot(_filteredBPs);
                                     }, _buttonStyle, GUILayout.Width(450));
@@ -164,7 +164,7 @@ namespace DataViewer.Menus {
 
                         using (new GUILayout.VerticalScope(GUI.skin.box)) {
                             // Data Search Bar
-                            GUIHelper.Div();
+                            UI.Div();
                             if (_bpChildNames.Length > 0) {
                                 using (new GUILayout.HorizontalScope()) {
                                     // search bar
@@ -176,7 +176,7 @@ namespace DataViewer.Menus {
 
                                         // _searchText input
                                         GUILayout.Space(10);
-                                        GUIHelper.TextField(ref _searchText, () => isDirty = true, null, GUILayout.Width(450));
+                                        UI.ActionTextField(ref _searchText, (s) => isDirty = true, GUILayout.Width(450));
                                         GUILayout.Space(10f);
                                         
                                         if (UI.Toggle("By Excluding", ref _searchReversed, GUILayout.ExpandWidth(false))) isDirty = true;
@@ -190,10 +190,10 @@ namespace DataViewer.Menus {
                             // Data Search Field Picker
                             if (_searchExpanded.IsOn()) {
                                 // selection
-                                GUIHelper.Div();
+                                UI.Div();
                                 var availableWidth = Main.ummWidth - 550;
                                 int xCols = (int)Math.Ceiling(availableWidth / 300);
-                                    GUIHelper.SelectionGrid(ref _searchIndex, _bpChildNames, xCols, () => isDirty = true, _buttonStyle, GUILayout.Width(availableWidth));
+                                    UI.ActionSelectionGrid(ref _searchIndex, _bpChildNames, xCols, (s) => isDirty = true, _buttonStyle, GUILayout.Width(availableWidth));
 
                                     // cache width
                                     if (Event.current.type == EventType.Repaint) {
@@ -204,7 +204,7 @@ namespace DataViewer.Menus {
                             if (isDirty) {
                                 UpdateSearchResults();
                             }
-                            GUIHelper.Div();
+                            UI.Div();
                             // tree view
                             using (new GUILayout.VerticalScope()) {
                                 _treeView.OnGUI(true, false);

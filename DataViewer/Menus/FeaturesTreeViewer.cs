@@ -47,15 +47,15 @@ namespace DataViewer.Menus {
                                 .Where(c => c.IsPlayerFaction).ToList(); // && !c.Descriptor.IsPet).ToList();
 
                         int selectedCharacterIndex = companions.IndexOf(_selectedCharacter) + 1;
-                        GUIHelper.SelectionGrid(ref selectedCharacterIndex,
+                        UI.ActionSelectionGrid(ref selectedCharacterIndex,
                             new string[] { "None" }.Concat(companions.Select(item => item.CharacterName)).ToArray(),
-                            1, () => {
-                                if (selectedCharacterIndex > 0) {
-                                    _selectedCharacter = companions[selectedCharacterIndex - 1];
+                            1, (index) => {
+                                if (index > 0) {
+                                    _selectedCharacter = companions[index - 1];
                                     modEntry.Logger.Log($"selected: {_selectedCharacter.CharacterName}");
                                     _featuresTree = new FeaturesTree(_selectedCharacter.Descriptor.Progression);
                                 }
-                            }, null, GUILayout.ExpandWidth(false));
+                            }, GUILayout.ExpandWidth(false));
                         if (selectedCharacterIndex == 0 &&
                             (Event.current.type == EventType.Layout || Event.current.type == EventType.Used)) {
                             _selectedCharacter = null;
