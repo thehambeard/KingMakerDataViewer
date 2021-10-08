@@ -26,7 +26,7 @@ namespace DataViewer.Menus {
         public int Priority => 500;
 
         public void OnGUI(UnityModManager.ModEntry modEntry) {
-            if (Mod == null || !Mod.Enabled)
+            if (ModManager == null || !ModManager.Enabled)
                 return;
 
             string activeScene = SceneManager.GetActiveScene().name;

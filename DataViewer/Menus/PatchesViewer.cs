@@ -22,7 +22,7 @@ namespace DataViewer.Menus {
         public int Priority => 900;
         bool firstTime = true;
         public void OnGUI(UnityModManager.ModEntry modEntry) {
-            if (Mod == null || !Mod.Enabled)
+            if (ModManager == null || !ModManager.Enabled)
                 return;
 
             if (_buttonStyle == null)

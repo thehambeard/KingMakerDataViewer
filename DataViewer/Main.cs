@@ -15,8 +15,8 @@ namespace DataViewer
     [EnableReloading]
 #endif
     static class Main {
-        public static ModManager<Core, Settings> Mod;
-        public static Settings settings { get { return Mod.Settings; } }
+        public static ModManager<Core, Settings> ModManager;
+        public static Settings settings { get { return ModManager.Settings; } }
         public static bool IsInGame { get { return Game.Instance.Player.Party.Any(); } }
 
         public static MenuManager Menu;
@@ -31,7 +31,7 @@ namespace DataViewer
         public static void Log(string s) { if (modEntry != null) modEntry.Logger.Log(s); }
         public static void Log(int indent, string s) { Log("    ".Repeat(indent) + s); }
         static bool Load(UnityModManager.ModEntry modEntry) {
-            Mod = new ModManager<Core, Settings>();
+            ModManager = new ModManager<Core, Settings>();
             Menu = new MenuManager();
             modEntry.OnToggle = OnToggle;
 #if (DEBUG)
@@ -41,9 +41,9 @@ namespace DataViewer
         }
 
         static bool Unload(UnityModManager.ModEntry modEntry) {
-            Mod.Disable(modEntry, true);
+            ModManager.Disable(modEntry, true);
             Menu = null;
-            Mod = null;
+            ModManager = null;
             return true;
         }
 #else
@@ -59,7 +59,7 @@ namespace DataViewer
             if (value)
             {
                 Assembly assembly = Assembly.GetExecutingAssembly();
-                Mod.Enable(modEntry, assembly);
+                ModManager.Enable(modEntry, assembly);
                 Menu.Enable(modEntry, assembly);
                 Menu.tabIndex = settings.selectedTab;
                 Menu.PropertyChanged += ModManagerPropertyChanged;
@@ -67,7 +67,7 @@ namespace DataViewer
             else
             {
                 Menu.Disable(modEntry);
-                Mod.Disable(modEntry, false);
+                ModManager.Disable(modEntry, false);
                 ReflectionCache.Clear();
             }
             return true;

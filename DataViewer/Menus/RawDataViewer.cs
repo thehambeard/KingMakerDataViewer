@@ -1,5 +1,6 @@
 ﻿using DataViewer.Utility;
 using Kingmaker;
+using Kingmaker.Blueprints.Root;
 using Kingmaker.Globalmap.View;
 using ModKit;
 using ModKit.Utility;
@@ -40,6 +41,7 @@ namespace DataViewer.Menus
             { "GlobalMapController", () => Game.Instance.GlobalMapController },
             { "GlobalMapView", () => GlobalMapView.Instance },
             { "GlobalMapUI", () => Game.Instance.UI.GlobalMapUI },
+            { "BlueprintRoot", () => Kingmaker.Blueprints.Root.BlueprintRoot.Instance },
             { "Root Game Objects", () => RawDataViewer.GetAllScenes().SelectMany(s => s.GetRootGameObjects()) },
             { "Game Objects", () => UnityEngine.Object.FindObjectsOfType<GameObject>() },
             { "Unity Resources", () =>  Resources.FindObjectsOfTypeAll(typeof(GameObject)) },
@@ -64,7 +66,7 @@ namespace DataViewer.Menus
         }
         public void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            if (Mod == null || !Mod.Enabled)
+            if (ModManager == null || !ModManager.Enabled)
                 return;
 
             try

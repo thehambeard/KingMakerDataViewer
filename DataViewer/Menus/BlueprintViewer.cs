@@ -106,7 +106,7 @@ namespace DataViewer.Menus {
             }
         }
         public void OnGUI(UnityModManager.ModEntry modEntry) {
-            if (Mod == null || !Mod.Enabled)
+            if (ModManager == null || !ModManager.Enabled)
                 return;
 
             if (_buttonStyle == null)
@@ -178,8 +178,8 @@ namespace DataViewer.Menus {
                                         GUILayout.Space(10);
                                         GUIHelper.TextField(ref _searchText, () => isDirty = true, null, GUILayout.Width(450));
                                         GUILayout.Space(10f);
-
-                                        if (GUIHelper.Checkbox(ref _searchReversed, "By Excluding", _buttonStyle, GUILayout.ExpandWidth(false))) isDirty = true;
+                                        
+                                        if (UI.Toggle("By Excluding", ref _searchReversed, GUILayout.ExpandWidth(false))) isDirty = true;
 
 
                                         if (_searchExpanded.IsOn()) {
