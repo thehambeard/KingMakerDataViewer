@@ -137,7 +137,7 @@ namespace DataViewer.Menus {
                                 GUILayout.Label($"{_bpTypeNames[_bpTypeIndex]}".Cyan(), GUILayout.Width(300));
 
                                 GUILayout.Space(10);
-                                UI.ActionTextField(ref _selectionSearchText, "", (s) => blueprintListIsDirty = true, GUILayout.MinWidth(150));
+                                UI.ActionTextField(ref _selectionSearchText, s => blueprintListIsDirty = true, UI.MinWidth(150));
                             }
                             if (blueprintListIsDirty) RefreshTypeNames();
                             UI.Div();
