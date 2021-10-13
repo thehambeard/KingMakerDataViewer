@@ -1,6 +1,9 @@
 {
 	"Releases":
 	[
-		{"Id": "DataViewer", "Version": "0.9.3"}
+		{
+			"Id": "DataViewer",
+			"Version": "1.0.3"
+		}
 	]
 }

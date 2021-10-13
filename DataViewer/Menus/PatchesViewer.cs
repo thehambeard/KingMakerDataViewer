@@ -21,6 +21,8 @@ namespace DataViewer.Menus {
         public string Name => "Patches";
         public int Priority => 900;
         bool firstTime = true;
+        private string searchText = "";
+        private int matchCount = 0;
         public void OnGUI(UnityModManager.ModEntry modEntry) {
             if (ModManager == null || !ModManager.Enabled)
                 return;
@@ -79,24 +81,22 @@ namespace DataViewer.Menus {
                     }
                     GUILayout.FlexibleSpace();
                 }
-
-                if (_modIdsToColor != null) {
+                UI.Space(25);
+                var searchTextLower = searchText.ToLower();
+                var methodBases = _patches?.Keys.Concat(_disabled.Keys).Distinct().OrderBy(m => m.Name).Where(m =>
+                       searchText.Length == 0
+                    || m.DeclaringType.FullName.ToLower().Contains(searchTextLower)
+                    || m.ToString().ToLower().Contains(searchTextLower)
+                    );
+                if (_modIdsToColor != null && methodBases != null) {
                     GUILayout.Space(10f);
-                    GUILayout.Label($"Selected Patch Owner: {selectedPatchName}");
-
-                    GUILayout.Space(10f);
-                }
-
-                // display info
-                if (_modIdsToColor != null && _patches != null) {
-                    int index = 1;
-                    var methodBases = _patches.Keys.Concat(_disabled.Keys).Distinct().OrderBy(m => m.Name);
-
-                    UI.Space(15);
-                    UI.Div();
-                    UI.Space(10);
-                    UI.Label("Patch Debug");
                     using (UI.HorizontalScope()) {
+                        GUILayout.Label($"Selected Patch Owner: {selectedPatchName}", UI.AutoWidth());
+                        UI.Space(25);
+                        UI.TextField(ref searchText, "Search", UI.Width(400));
+                        UI.Space(25);
+                        UI.Label("Patch Debug");
+                        UI.Space(25);
                         if (_patches.Sum(entry => entry.Value.Count()) > 0) {
                             UI.ActionButton("Disable All", () => {
                                 var actions = new List<Action> { };
@@ -120,15 +120,18 @@ namespace DataViewer.Menus {
                             });
                         }
                     }
+                    UI.Space(25);
+                    UI.Label($"Patches Found: {methodBases.Count().ToString().cyan()}".orange());
+                    int index = 1;
                     foreach (var method in methodBases) {
+                        string typeStr = method.DeclaringType.FullName;
+                        var methodComponents = method.ToString().Split();
+                        var returnTypeStr = methodComponents[0];
+                        var methodName = methodComponents[1];
                         UI.Space(15);
                         UI.Div();
                         UI.Space(10);
                         using (new GUILayout.VerticalScope()) {
-                            string typeStr = method.DeclaringType.FullName;
-                            var methodComponents = method.ToString().Split();
-                            var returnTypeStr = methodComponents[0];
-                            var methodName = methodComponents[1];
                             using (new GUILayout.HorizontalScope()) {
                                 GUILayout.Label($"{index++}", GUI.skin.box, UI.AutoWidth());
                                 UI.Space(10);
