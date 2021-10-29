@@ -76,7 +76,7 @@ namespace DataViewer.Menus {
             _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).OrderBy(key => key).ToArray();
             _searchIndex = Array.IndexOf(_bpChildNames, "name");
         }
-    public void RefreshTypeNames() {
+        public void RefreshTypeNames() {
             _bpTypes = new Type[] { null }.Concat(GetBlueprints()
     .Select(bp => bp.GetType()).Distinct().OrderBy(type => type.Name)).ToArray();
             if (!_selectionSearchText.IsNullOrEmpty()) {
@@ -87,6 +87,26 @@ namespace DataViewer.Menus {
             _bpTypes[0] = typeof(BlueprintScriptableObject);
             _bpTypeIndex = 0;
         }
+
+        public bool Matches(object value, string searchText) {
+            if (value is IEnumerable<object> enumerable) {
+                var typeStr = searchText;
+                var valueStr = "";
+                if (searchText.Contains(':')) {
+                    var split = searchText.Split(':');
+                    typeStr = split[0];
+                    valueStr = split[1];
+                }
+                foreach (var item in enumerable) {
+                    if ((typeStr.Length == 0 || item.GetType().Name.ToLower().Contains(typeStr)) &&
+                        (valueStr.Length == 0 || item.ToString().ToLower().Contains(valueStr))
+                    ) return !_searchReversed;
+                }
+            }
+
+            try { return (value?.ToString()?.ToLower().Contains(searchText) ?? false) != _searchReversed; }
+            catch { return _searchReversed; }
+        }
         public void UpdateSearchResults() {
             if (string.IsNullOrEmpty(_searchText)) {
                 _treeView.SetRoot(_filteredBPs);
@@ -94,17 +114,46 @@ namespace DataViewer.Menus {
             else {
                 var searchText = _searchText.ToLower();
                 if (_bpFields.TryGetValue(_bpChildNames[_searchIndex], out FieldInfo f))
-                    _treeView.SetRoot(_filteredBPs.Where(bp => {
-                        try { return (f.GetValue(bp)?.ToString()?.ToLower().Contains(searchText) ?? false) != _searchReversed; }
-                        catch { return _searchReversed; }
-                    }).ToList());
+                    _treeView.SetRoot(_filteredBPs.Where(bp => Matches(f.GetValue(bp), searchText)).ToList());
                 else if (_bpProperties.TryGetValue(_bpChildNames[_searchIndex], out PropertyInfo p))
                     _treeView.SetRoot(_filteredBPs.Where(bp => {
-                        try { return (p.GetValue(bp)?.ToString()?.ToLower().Contains(searchText) ?? false) != _searchReversed; }
-                        catch { return _searchReversed; }
+                        try {
+                            return Matches(p.GetValue(bp), searchText);
+                        }
+                        catch {
+                            return false;
+                        }
                     }).ToList());
             }
         }
+#if false
+        public bool Matches(object value, string[] terms) {
+            if (value is IEnumerable<object> enumerable) {
+                if (terms.All(t => enumerable.Any(e => e.ToString().ToLower().Contains((t)))))
+                     return !_searchReversed;
+            }
+
+            try {
+                var text = value?.ToString()?.ToLower();
+                if (text == null) return _searchReversed;
+                return terms.All(t => text.Contains(t)) != _searchReversed;
+            }
+            catch { return _searchReversed; }
+        }
+        public void UpdateSearchResults() {
+            if (string.IsNullOrEmpty(_searchText)) {
+                _treeView.SetRoot(_filteredBPs);
+            }
+            else {
+                var searchText = _searchText.ToLower();
+                var terms = searchText.Split(' ');
+                if (_bpFields.TryGetValue(_bpChildNames[_searchIndex], out FieldInfo f))
+                    _treeView.SetRoot(_filteredBPs.Where(bp => Matches(f.GetValue(bp), terms)).ToList());
+                else if (_bpProperties.TryGetValue(_bpChildNames[_searchIndex], out PropertyInfo p))
+                    _treeView.SetRoot(_filteredBPs.Where(bp => Matches(p.GetValue(bp), terms)).ToList());
+            }
+        }
+#endif
         public void OnGUI(UnityModManager.ModEntry modEntry) {
             if (ModManager == null || !ModManager.Enabled)
                 return;
@@ -170,20 +219,21 @@ namespace DataViewer.Menus {
                                     // search bar
                                     GUILayout.Space(10f);
 
-                                        // slelection - button
-                                        using (new GUILayout.HorizontalScope()) {
-                                            UI.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
+                                    // slelection - button
+                                    using (new GUILayout.HorizontalScope()) {
+                                        UI.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
 
                                         // _searchText input
                                         GUILayout.Space(10);
                                         UI.ActionTextField(ref _searchText, (s) => isDirty = true, GUILayout.Width(450));
                                         GUILayout.Space(10f);
-                                        
+
                                         if (UI.Toggle("By Excluding", ref _searchReversed, GUILayout.ExpandWidth(false))) isDirty = true;
 
 
                                         if (_searchExpanded.IsOn()) {
-                                            GUILayout.Space(10f); }
+                                            GUILayout.Space(10f);
+                                        }
                                     }
                                 }
                             }
@@ -193,12 +243,12 @@ namespace DataViewer.Menus {
                                 UI.Div();
                                 var availableWidth = Main.ummWidth - 550;
                                 int xCols = (int)Math.Ceiling(availableWidth / 300);
-                                    UI.ActionSelectionGrid(ref _searchIndex, _bpChildNames, xCols, (s) => isDirty = true, _buttonStyle, GUILayout.Width(availableWidth));
+                                UI.ActionSelectionGrid(ref _searchIndex, _bpChildNames, xCols, (s) => isDirty = true, _buttonStyle, GUILayout.Width(availableWidth));
 
-                                    // cache width
-                                    if (Event.current.type == EventType.Repaint) {
-                                        _searchWidth = GUILayoutUtility.GetLastRect().width + 65f;
-                                    }
+                                // cache width
+                                if (Event.current.type == EventType.Repaint) {
+                                    _searchWidth = GUILayoutUtility.GetLastRect().width + 65f;
+                                }
                             }
                             // Do the search
                             if (isDirty) {
@@ -215,7 +265,7 @@ namespace DataViewer.Menus {
             }
             catch (Exception e) {
                 _bpTypeIndex = 0;
-//                _treeView.Clear();
+                //                _treeView.Clear();
                 modEntry.Logger.Error(e.StackTrace);
                 throw e;
             }
