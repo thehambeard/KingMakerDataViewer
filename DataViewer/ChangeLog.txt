@@ -1,4 +1,7 @@
-﻿Version 0.9.3
+﻿Version 1.0.4
+    Show specific subtype of items in collections
+    Show collection count in the parent collection entry (e.g. [p] ActiveCompanions[5] : List`1 ...)
+Version 0.9.3
     Fix nodes are not updated properly
     Fix an error on reading null object
 

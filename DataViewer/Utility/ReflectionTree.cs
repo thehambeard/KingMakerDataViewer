@@ -113,6 +113,7 @@ namespace DataViewer.Utility.ReflectionTree {
         public abstract Type InstType { get; }
         public abstract bool IsBaseType { get; }
         public abstract bool IsEnumerable { get; }
+        public abstract int EnumerableCount { get; }
         public abstract bool IsException { get; }
         public abstract bool IsGameObject { get; }
         public abstract bool IsNull { get; }
@@ -192,6 +193,7 @@ namespace DataViewer.Utility.ReflectionTree {
         private bool? _isGameObject;
 
         private TNode _value;
+        private int _enumerableCount = -1;
         private bool _valueIsDirty = true;
 
         private List<Node> _componentNodes;
@@ -215,6 +217,7 @@ namespace DataViewer.Utility.ReflectionTree {
             protected set {
                 if (!value?.Equals(_value) ?? _value != null) {
                     _value = value;
+                    _enumerableCount = -1;
                     if (!Type.IsValueType || IsNullable) {
                         Type oldType = _instType;
                         _instType = value?.GetType();
@@ -246,6 +249,12 @@ namespace DataViewer.Utility.ReflectionTree {
             get {
                 UpdateValue();
                 return _isEnumerable ?? (_isEnumerable = (InstType ?? Type).GetInterfaces().Contains(typeof(IEnumerable))).Value;
+            }
+        }
+        public override int EnumerableCount {
+            get {
+                UpdateValue();
+                return _enumerableCount;
             }
         }
         public override bool IsGameObject {
@@ -321,6 +330,7 @@ namespace DataViewer.Utility.ReflectionTree {
                 _componentNodes.Add(FindOrCreateChildForValue(item, nodeType, this, "<component_" + i + ">", item));
                 i++;
             }
+            this._enumerableCount = i;
         }
         private void UpdateItemNodes() {
             UpdateValue();
@@ -350,6 +360,7 @@ namespace DataViewer.Utility.ReflectionTree {
                 _itemNodes.Add(FindOrCreateChildForValue(item, nodeType, this, "<item_" + i + ">", item));
                 i++;
             }
+            this._enumerableCount = i;
         }
         private void UpdateFieldNodes() {
             UpdateValue();

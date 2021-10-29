@@ -198,9 +198,12 @@ namespace DataViewer.Utility {
                     var name = node.Name;
                     var instText = "";  // if (node.InstanceID is int instID) instText = "@" + instID.ToString();
                     name = name.MarkedSubstring(searchText);
+                    var enumerableCount = node.EnumerableCount;
+                    if (enumerableCount >= 0) name = name+ $"[{enumerableCount}]".yellow();
+                    var typeName = node.InstType?.Name ?? node.Type?.Name;
                     UI.ToggleButton(ref expanded,
                         $"[{node.NodeTypePrefix}] ".color(RGBA.grey) +
-                        name + " : " + node.Type.Name.color(
+                        name + " : " + typeName.color(
                             node.IsBaseType ? RGBA.grey :
                             node.IsGameObject ? RGBA.magenta :
                             node.IsEnumerable ? RGBA.cyan : RGBA.orange)
