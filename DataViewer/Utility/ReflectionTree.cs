@@ -1,4 +1,5 @@
-﻿using ModKit;
+﻿using Kingmaker.Blueprints;
+using ModKit;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -217,6 +218,8 @@ namespace DataViewer.Utility.ReflectionTree {
             protected set {
                 if (!value?.Equals(_value) ?? _value != null) {
                     _value = value;
+                    if (value is BlueprintReferenceBase bpRefBase && bpRefBase.Cached is null)
+                        bpRefBase.GetBlueprint();
                     _enumerableCount = -1;
                     if (!Type.IsValueType || IsNullable) {
                         Type oldType = _instType;
@@ -403,7 +406,6 @@ namespace DataViewer.Utility.ReflectionTree {
             if (IsException || IsNull) {
                 return;
             }
-
             Type nodeType = InstType.IsValueType ? !IsNullable ?
                 typeof(PropertyOfStructNode<,,>) : typeof(PropertyOfNullableNode<,,>) : typeof(PropertyOfClassNode<,,>);
 
@@ -426,7 +428,6 @@ namespace DataViewer.Utility.ReflectionTree {
                 if (_propertyNodes != null)
                     foreach (Node child in _propertyNodes)
                         child.SetDirty();
-
                 UpdateValueImpl();
             }
         }

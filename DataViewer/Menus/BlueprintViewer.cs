@@ -1,4 +1,5 @@
-﻿using DataViewer.Utility;
+﻿using DataViewer;
+using DataViewer.Utility;
 using DataViewer.Utility.ReflectionTree;
 using Kingmaker.Blueprints;
 using ModKit;
@@ -14,6 +15,7 @@ using Kingmaker.Utility;
 
 namespace DataViewer.Menus {
     public class BlueprintViewer : IMenuSelectablePage {
+        Settings settings => Main.settings;
         private static IEnumerable<SimpleBlueprint> _allBlueprints = null;
         public static IEnumerable<SimpleBlueprint> GetBlueprints() {
             if (_allBlueprints == null) {
@@ -51,10 +53,7 @@ namespace DataViewer.Menus {
         private Dictionary<string, FieldInfo> _bpFields;
         private Dictionary<string, PropertyInfo> _bpProperties;
         private string[] _bpChildNames;
-
-        private int _searchIndex;
-        private bool _searchReversed;
-        private string _searchText;
+        private int _searchChildIndex = 0;
 
         // search selection
         private ToggleState _searchExpanded;
@@ -74,7 +73,11 @@ namespace DataViewer.Menus {
             _bpFields = Node.GetFields(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
             _bpProperties = Node.GetProperties(_bpTypes[_bpTypeIndex]).OrderBy(info => info.Name).ToDictionary(info => info.Name);
             _bpChildNames = _bpFields.Keys.Concat(_bpProperties.Keys).OrderBy(key => key).ToArray();
-            _searchIndex = Array.IndexOf(_bpChildNames, "name");
+            _searchChildIndex = Array.IndexOf(_bpChildNames, settings.searchChildName);
+            if (_searchChildIndex == -1) {
+                settings.searchChildName = "name";
+                _searchChildIndex = Array.IndexOf(_bpChildNames, settings.searchChildName);
+            }
         }
         public void RefreshTypeNames() {
             _bpTypes = new Type[] { null }.Concat(GetBlueprints()
@@ -100,22 +103,22 @@ namespace DataViewer.Menus {
                 foreach (var item in enumerable) {
                     if ((typeStr.Length == 0 || item.GetType().Name.ToLower().Contains(typeStr)) &&
                         (valueStr.Length == 0 || item.ToString().ToLower().Contains(valueStr))
-                    ) return !_searchReversed;
+                    ) return !settings.searchReversed;
                 }
             }
 
-            try { return (value?.ToString()?.ToLower().Contains(searchText) ?? false) != _searchReversed; }
-            catch { return _searchReversed; }
+            try { return (value?.ToString()?.ToLower().Contains(searchText) ?? false) != settings.searchReversed; }
+            catch { return settings.searchReversed; }
         }
         public void UpdateSearchResults() {
-            if (string.IsNullOrEmpty(_searchText)) {
+            if (string.IsNullOrEmpty(settings.searchText)) {
                 _treeView.SetRoot(_filteredBPs);
             }
             else {
-                var searchText = _searchText.ToLower();
-                if (_bpFields.TryGetValue(_bpChildNames[_searchIndex], out FieldInfo f))
+                var searchText = settings.searchText.ToLower();
+                if (_bpFields.TryGetValue(_bpChildNames[_searchChildIndex], out FieldInfo f))
                     _treeView.SetRoot(_filteredBPs.Where(bp => Matches(f.GetValue(bp), searchText)).ToList());
-                else if (_bpProperties.TryGetValue(_bpChildNames[_searchIndex], out PropertyInfo p))
+                else if (_bpProperties.TryGetValue(_bpChildNames[_searchChildIndex], out PropertyInfo p))
                     _treeView.SetRoot(_filteredBPs.Where(bp => {
                         try {
                             return Matches(p.GetValue(bp), searchText);
@@ -195,7 +198,6 @@ namespace DataViewer.Menus {
                                 using (var scrollView = new GUILayout.ScrollViewScope(_bpsScrollPosition, GUILayout.Width(450))) {
                                     _bpsScrollPosition = scrollView.scrollPosition;
                                     UI.ActionSelectionGrid(ref _bpTypeIndex, _bpTypeNames, 1, (typeIndex) => {
-                                        _searchText = null;
                                         RefreshBPSearchData();
                                         _filteredBPs = typeIndex == 0 ? GetBlueprints() : GetBlueprints().Where(item => item.GetType() == _bpTypes[typeIndex]).ToList();
                                         ;
@@ -221,14 +223,14 @@ namespace DataViewer.Menus {
 
                                     // slelection - button
                                     using (new GUILayout.HorizontalScope()) {
-                                        UI.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
+                                        UI.ToggleButton(ref _searchExpanded, $"Search: {_bpChildNames[_searchChildIndex]}", _buttonStyle, GUILayout.ExpandWidth(false));
 
                                         // _searchText input
                                         GUILayout.Space(10);
-                                        UI.ActionTextField(ref _searchText, (s) => isDirty = true, GUILayout.Width(450));
+                                        UI.ActionTextField(ref settings.searchText, (s) => isDirty = true, GUILayout.Width(450));
                                         GUILayout.Space(10f);
 
-                                        if (UI.Toggle("By Excluding", ref _searchReversed, GUILayout.ExpandWidth(false))) isDirty = true;
+                                        if (UI.Toggle("By Excluding", ref settings.searchReversed, GUILayout.ExpandWidth(false))) isDirty = true;
 
 
                                         if (_searchExpanded.IsOn()) {
@@ -243,7 +245,10 @@ namespace DataViewer.Menus {
                                 UI.Div();
                                 var availableWidth = Main.ummWidth - 550;
                                 int xCols = (int)Math.Ceiling(availableWidth / 300);
-                                UI.ActionSelectionGrid(ref _searchIndex, _bpChildNames, xCols, (s) => isDirty = true, _buttonStyle, GUILayout.Width(availableWidth));
+                                UI.ActionSelectionGrid(ref _searchChildIndex, _bpChildNames, xCols, (childIndex) => {
+                                    isDirty = true;
+                                    settings.searchChildName = _bpChildNames[childIndex];
+                                }, _buttonStyle, GUILayout.Width(availableWidth));
 
                                 // cache width
                                 if (Event.current.type == EventType.Repaint) {

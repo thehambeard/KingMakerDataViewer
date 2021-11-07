@@ -199,7 +199,7 @@ namespace DataViewer.Utility {
                     var instText = "";  // if (node.InstanceID is int instID) instText = "@" + instID.ToString();
                     name = name.MarkedSubstring(searchText);
                     var enumerableCount = node.EnumerableCount;
-                    if (enumerableCount >= 0) name = name+ $"[{enumerableCount}]".yellow();
+                    if (enumerableCount >= 0) name = name + $"[{enumerableCount}]".yellow();
                     var typeName = node.InstType?.Name ?? node.Type?.Name;
                     UI.ToggleButton(ref expanded,
                         $"[{node.NodeTypePrefix}] ".color(RGBA.grey) +

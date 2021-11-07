@@ -8,5 +8,8 @@ namespace DataViewer
         public int selectedRawDataType = 0;
         public int maxRows = 20;
         public int maxSearchDepth = 3;
+        public string searchChildName = "name";
+        public string searchText = "";
+        public bool searchReversed = false;
     }
 }

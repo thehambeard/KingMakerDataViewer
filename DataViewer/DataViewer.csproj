@@ -71,6 +71,7 @@
   <ItemGroup>
     <Reference Include="0Harmony, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Lib.Harmony.2.0.4\lib\net472\0Harmony.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(SolutionDir)lib\Assembly-CSharp_public.dll</HintPath>
@@ -265,9 +266,10 @@
     </None>
     <None Include="packages.config" />
     <None Include="Repository.json" />
+    <None Include="zip-hash-sign.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ChangeLog.txt" />
+    <None Include="ReadMe.md" />
   </ItemGroup>
   <Import Project="..\..\ToyBox\ModKit\ModKitSrc.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -275,6 +277,7 @@
     <PostBuildEvent>echo "$(TargetPath)" "&gt;C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure\Mods\$(ProjectName)\$(ProjectName).dll*"
 copy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure\Mods\$(ProjectName)\$(ProjectName).dll"
 copy /Y "$(TargetDir)$(TargetName).pdb" "C:\Program Files (x86)\Steam\steamapps\common\Pathfinder Second Adventure\Mods\$(ProjectName)\$(ProjectName).pdb"
+powershell.exe -ExecutionPolicy Unrestricted -f "$(ProjectDir)zip-hash-sign.ps1"
 
 </PostBuildEvent>
   </PropertyGroup>
