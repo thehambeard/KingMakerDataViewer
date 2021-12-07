@@ -28,6 +28,7 @@ namespace DataViewer.Menus
             { "Player", () => Game.Instance?.Player },
             { "Characters", () => Game.Instance?.Player?.AllCharacters },
             { "Units", () => Game.Instance?.State?.Units },
+            { "States", () => Game.Instance?.State },
             { "Inventory", () => Game.Instance?.Player?.Inventory },
             { "Dialog", () => Game.Instance?.DialogController },
             { "Vendor", () => Game.Instance?.Vendor },
